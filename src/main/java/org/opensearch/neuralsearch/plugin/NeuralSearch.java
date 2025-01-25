@@ -14,12 +14,19 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import com.google.common.collect.ImmutableList;
+import org.opensearch.action.ActionRequest;
 import org.opensearch.client.Client;
 import org.opensearch.cluster.metadata.IndexNameExpressionResolver;
+import org.opensearch.cluster.node.DiscoveryNodes;
 import org.opensearch.cluster.service.ClusterService;
+import org.opensearch.common.settings.ClusterSettings;
+import org.opensearch.common.settings.IndexScopedSettings;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
+import org.opensearch.common.settings.SettingsFilter;
 import org.opensearch.common.util.FeatureFlags;
+import org.opensearch.core.action.ActionResponse;
 import org.opensearch.core.common.io.stream.NamedWriteableRegistry;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.env.Environment;
@@ -55,7 +62,10 @@ import org.opensearch.neuralsearch.query.HybridQueryBuilder;
 import org.opensearch.neuralsearch.query.NeuralQueryBuilder;
 import org.opensearch.neuralsearch.query.NeuralSparseQueryBuilder;
 import org.opensearch.neuralsearch.query.ext.RerankSearchExtBuilder;
+import org.opensearch.neuralsearch.rest.RestNeuralStatsHandler;
 import org.opensearch.neuralsearch.search.query.HybridQueryPhaseSearcher;
+import org.opensearch.neuralsearch.transport.NeuralStatsAction;
+import org.opensearch.neuralsearch.transport.NeuralStatsTransportAction;
 import org.opensearch.neuralsearch.util.NeuralSearchClusterUtil;
 import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ExtensiblePlugin;
@@ -64,6 +74,8 @@ import org.opensearch.plugins.Plugin;
 import org.opensearch.plugins.SearchPipelinePlugin;
 import org.opensearch.plugins.SearchPlugin;
 import org.opensearch.repositories.RepositoriesService;
+import org.opensearch.rest.RestController;
+import org.opensearch.rest.RestHandler;
 import org.opensearch.script.ScriptService;
 import org.opensearch.search.pipeline.SearchPhaseResultsProcessor;
 import org.opensearch.search.pipeline.SearchRequestProcessor;
@@ -85,6 +97,7 @@ public class NeuralSearch extends Plugin implements ActionPlugin, SearchPlugin, 
     private final ScoreNormalizationFactory scoreNormalizationFactory = new ScoreNormalizationFactory();
     private final ScoreCombinationFactory scoreCombinationFactory = new ScoreCombinationFactory();
     public static final String EXPLANATION_RESPONSE_KEY = "explanation_response";
+    public static final String NEURAL_BASE_URI = "/_plugins/_neural";
 
     @Override
     public Collection<Object> createComponents(
@@ -115,6 +128,25 @@ public class NeuralSearch extends Plugin implements ActionPlugin, SearchPlugin, 
             new QuerySpec<>(HybridQueryBuilder.NAME, HybridQueryBuilder::new, HybridQueryBuilder::fromXContent),
             new QuerySpec<>(NeuralSparseQueryBuilder.NAME, NeuralSparseQueryBuilder::new, NeuralSparseQueryBuilder::fromXContent)
         );
+    }
+
+    @Override
+    public List<RestHandler> getRestHandlers(
+        Settings settings,
+        RestController restController,
+        ClusterSettings clusterSettings,
+        IndexScopedSettings indexScopedSettings,
+        SettingsFilter settingsFilter,
+        IndexNameExpressionResolver indexNameExpressionResolver,
+        Supplier<DiscoveryNodes> nodesInCluster
+    ) {
+        RestNeuralStatsHandler restNeuralStatsHandler = new RestNeuralStatsHandler();
+        return ImmutableList.of(restNeuralStatsHandler);
+    }
+
+    @Override
+    public List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> getActions() {
+        return Arrays.asList(new ActionHandler<>(NeuralStatsAction.INSTANCE, NeuralStatsTransportAction.class));
     }
 
     @Override
