@@ -32,8 +32,11 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
         Response response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
         String responseBody = EntityUtils.toString(response.getEntity());
         Map<String, Object> clusterStats = parseStatsResponse(responseBody);
-        log.info(clusterStats.toString());
-        assertEquals("Bratwurst", (String) clusterStats.get("Sushi"));
+        log.info("rest_it_pasta");
+        for (Map.Entry<String, Object> entry : clusterStats.entrySet()) {
+            log.info(entry.toString(), entry.getValue());
+        }
+        assertEquals("Sushi", (String) clusterStats.get("Bratwurst"));
     }
 
     protected Response executeNeuralStatRequest(List<String> nodeIds, List<String> stats) throws IOException {

@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  *  NeuralStatsTransportAction contains the logic to extract the stats from the nodes
@@ -70,13 +69,11 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
     ) {
 
         Map<String, Object> clusterStats = new HashMap<>();
-        Set<String> statsToBeRetrieved = request.getStatsToBeRetrieved();
 
-        for (String statName : neuralStats.getClusterStats().keySet()) {
-            if (statsToBeRetrieved.contains(statName)) {
-                clusterStats.put(statName, neuralStats.getStats().get(statName).getValue());
-            }
+        for (String statName : neuralStats.getStats().keySet()) {
+            clusterStats.put(statName, neuralStats.getStats().get(statName).getValue());
         }
+        System.out.println(clusterStats);
 
         return new NeuralStatsResponse(clusterService.getClusterName(), responses, failures, clusterStats);
     }
@@ -93,17 +90,10 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
 
     @Override
     protected NeuralStatsNodeResponse nodeOperation(NeuralStatsNodeRequest request) {
-        return createNeuralStatsNodeResponse(request.getNeuralStatsRequest());
-    }
-
-    private NeuralStatsNodeResponse createNeuralStatsNodeResponse(NeuralStatsRequest neuralStatsRequest) {
         Map<String, Object> statValues = new HashMap<>();
-        Set<String> statsToBeRetrieved = neuralStatsRequest.getStatsToBeRetrieved();
 
-        for (String statName : neuralStats.getNodeStats().keySet()) {
-            if (statsToBeRetrieved.contains(statName)) {
-                statValues.put(statName, neuralStats.getStats().get(statName).getValue());
-            }
+        for (String statName : neuralStats.getStats().keySet()) {
+            statValues.put(statName, neuralStats.getStats().get(statName).getValue());
         }
         return new NeuralStatsNodeResponse(clusterService.localNode(), statValues);
     }
