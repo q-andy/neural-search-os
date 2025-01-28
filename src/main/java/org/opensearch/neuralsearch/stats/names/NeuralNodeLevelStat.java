@@ -2,11 +2,9 @@
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-
 package org.opensearch.neuralsearch.stats.names;
 
-public enum NeuralNodeLevelStat
-{
+public enum NeuralNodeLevelStat {
     NEURAL_QUERY_COUNT,
     HYBRID_QUERY_COUNT;
 

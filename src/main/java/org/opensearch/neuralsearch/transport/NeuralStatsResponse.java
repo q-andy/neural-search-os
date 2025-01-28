@@ -16,6 +16,7 @@ import org.opensearch.core.xcontent.XContentBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * NeuralStatsResponse consists of the aggregated responses from the nodes
@@ -33,7 +34,7 @@ public class NeuralStatsResponse extends BaseNodesResponse<NeuralStatsNodeRespon
      */
     public NeuralStatsResponse(StreamInput in) throws IOException {
         super(new ClusterName(in), in.readList(NeuralStatsNodeResponse::readStats), in.readList(FailedNodeException::new));
-        clusterStats = in.readMap();
+        clusterStats = new TreeMap<>(in.readMap());
     }
 
     /**
@@ -51,7 +52,7 @@ public class NeuralStatsResponse extends BaseNodesResponse<NeuralStatsNodeRespon
         Map<String, Object> clusterStats
     ) {
         super(clusterName, nodes, failures);
-        this.clusterStats = clusterStats;
+        this.clusterStats = new TreeMap<>(clusterStats);
     }
 
     @Override

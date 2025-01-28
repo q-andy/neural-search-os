@@ -4,6 +4,7 @@
  */
 package org.opensearch.neuralsearch.transport;
 
+import lombok.Getter;
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.common.io.stream.StreamOutput;
 import org.opensearch.transport.TransportRequest;
@@ -14,6 +15,7 @@ import java.io.IOException;
  *  NeuralStatsNodeRequest represents the request to an individual node
  */
 public class NeuralStatsNodeRequest extends TransportRequest {
+    @Getter
     private NeuralStatsRequest request;
 
     /**
@@ -41,15 +43,6 @@ public class NeuralStatsNodeRequest extends TransportRequest {
      */
     public NeuralStatsNodeRequest(NeuralStatsRequest request) {
         this.request = request;
-    }
-
-    /**
-     * Get NeuralStatsRequest
-     *
-     * @return NeuralStatsRequest for this node
-     */
-    public NeuralStatsRequest getNeuralStatsRequest() {
-        return request;
     }
 
     @Override

@@ -2,7 +2,6 @@
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-
 package org.opensearch.neuralsearch.stats;
 
 import lombok.Builder;
@@ -75,7 +74,9 @@ public class NeuralStatsInput implements ToXContentObject, Writeable {
 
     public NeuralStatsInput(StreamInput input) throws IOException {
         targetStatLevels = input.readBoolean() ? input.readEnumSet(NeuralStatLevel.class) : EnumSet.noneOf(NeuralStatLevel.class);
-        clusterLevelStats = input.readBoolean() ? input.readEnumSet(NeuralClusterLevelStat.class) : EnumSet.noneOf(NeuralClusterLevelStat.class);
+        clusterLevelStats = input.readBoolean()
+            ? input.readEnumSet(NeuralClusterLevelStat.class)
+            : EnumSet.noneOf(NeuralClusterLevelStat.class);
         nodeLevelStats = input.readBoolean() ? input.readEnumSet(NeuralNodeLevelStat.class) : EnumSet.noneOf(NeuralNodeLevelStat.class);
         nodeIds = input.readBoolean() ? new HashSet<>(input.readStringList()) : new HashSet<>();
     }
@@ -110,7 +111,12 @@ public class NeuralStatsInput implements ToXContentObject, Writeable {
 
             switch (fieldName) {
                 case TARGET_STAT_LEVEL:
-                    parseField(parser, targetStatLevels, input -> NeuralStatLevel.from(input.toUpperCase(Locale.ROOT)), NeuralStatLevel.class);
+                    parseField(
+                        parser,
+                        targetStatLevels,
+                        input -> NeuralStatLevel.from(input.toUpperCase(Locale.ROOT)),
+                        NeuralStatLevel.class
+                    );
                     break;
                 case CLUSTER_LEVEL_STATS:
                     parseField(
@@ -136,8 +142,7 @@ public class NeuralStatsInput implements ToXContentObject, Writeable {
                     break;
             }
         }
-        return NeuralStatsInput
-            .builder()
+        return NeuralStatsInput.builder()
             .targetStatLevels(targetStatLevels)
             .clusterLevelStats(clusterLevelStats)
             .nodeLevelStats(nodeLevelStats)
@@ -171,7 +176,6 @@ public class NeuralStatsInput implements ToXContentObject, Writeable {
     public boolean retrieveAllNodeLevelStats() {
         return nodeLevelStats == null || nodeLevelStats.size() == 0;
     }
-
 
     public boolean retrieveStatsOnAllNodes() {
         return nodeIds == null || nodeIds.size() == 0;

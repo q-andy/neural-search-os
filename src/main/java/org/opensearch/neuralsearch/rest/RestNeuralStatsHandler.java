@@ -45,6 +45,7 @@ public class RestNeuralStatsHandler extends BaseRestHandler {
 
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) {
+        // Read inputs and convert to BaseNodesRequest with correct info configured
         NeuralStatsRequest neuralStatsRequest = getRequest(request);
 
         return channel -> client.execute(
@@ -79,17 +80,18 @@ public class RestNeuralStatsHandler extends BaseRestHandler {
         }
 
         if (statsSet == null) {
-            neuralStatsRequest.all();
+
         } else if (statsSet.size() == 1 && statsSet.contains("_all")) {
-            neuralStatsRequest.all();
+
         } else if (statsSet.contains(NeuralStatsRequest.ALL_STATS_KEY)) {
             throw new IllegalArgumentException("Request " + request.path() + " contains _all and individual stats");
         } else {
             Set<String> invalidStats = new TreeSet<>();
             for (String stat : statsSet) {
-                if (!neuralStatsRequest.addStat(stat)) {
-                    invalidStats.add(stat);
-                }
+                // validate request contains valid stats
+                // if (!neuralStatsRequest.addStat(stat)) {
+                // invalidStats.add(stat);
+                // }
             }
 
             if (!invalidStats.isEmpty()) {
