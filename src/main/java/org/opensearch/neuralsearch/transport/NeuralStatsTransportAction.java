@@ -10,6 +10,7 @@ import org.opensearch.action.support.nodes.TransportNodesAction;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.inject.Inject;
 import org.opensearch.core.common.io.stream.StreamInput;
+import org.opensearch.neuralsearch.stats.DerivedStats;
 import org.opensearch.neuralsearch.stats.NeuralStats;
 import org.opensearch.transport.TransportService;
 import org.opensearch.threadpool.ThreadPool;
@@ -58,7 +59,9 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
             ThreadPool.Names.MANAGEMENT,
             NeuralStatsNodeResponse.class
         );
-        this.neuralStats = neuralStats;
+        // TODO : inject rather than singleton here
+        // this.neuralStats = neuralStats;
+        this.neuralStats = NeuralStats.instance();
     }
 
     @Override
@@ -70,9 +73,13 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
 
         Map<String, Object> clusterStats = new HashMap<>();
 
-        for (String statName : neuralStats.getStats().keySet()) {
-            clusterStats.put(statName, neuralStats.getStats().get(statName).getValue());
-        }
+        clusterStats.put("cluster_level_stat_1", "Yay!");
+        // for (String statName : neuralStats.getStats().keySet()) {
+        // clusterStats.put(statName, neuralStats.getStats().get(statName).getValue());
+        // }'
+        DerivedStats derivedStats = DerivedStats.instance();
+        clusterStats.putAll(derivedStats.addDerivedStats(responses.stream().map(NeuralStatsNodeResponse::getStatsMap).toList()));
+
         System.out.println(clusterStats);
 
         return new NeuralStatsResponse(clusterService.getClusterName(), responses, failures, clusterStats);
@@ -90,11 +97,14 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
 
     @Override
     protected NeuralStatsNodeResponse nodeOperation(NeuralStatsNodeRequest request) {
-        Map<String, Object> statValues = new HashMap<>();
+        // Reads from NeuralStats to node level stats on an individual node
+        Map<String, Long> statValues = new HashMap<>();
 
         for (String statName : neuralStats.getStats().keySet()) {
             statValues.put(statName, neuralStats.getStats().get(statName).getValue());
         }
+        System.out.println("Transport_Action node operation for (ta_node_pasta)" + clusterService.localNode());
+        System.out.println(statValues);
         return new NeuralStatsNodeResponse(clusterService.localNode(), statValues);
     }
 }
