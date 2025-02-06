@@ -13,6 +13,8 @@ import org.opensearch.common.Nullable;
 import org.opensearch.index.query.QueryBuilder;
 import org.opensearch.ingest.ConfigurationUtils;
 import org.opensearch.neuralsearch.query.visitor.NeuralSearchQueryVisitor;
+import org.opensearch.neuralsearch.stats.NeuralStats;
+import org.opensearch.neuralsearch.stats.names.StatName;
 import org.opensearch.search.pipeline.AbstractProcessor;
 import org.opensearch.search.pipeline.Processor;
 import org.opensearch.search.pipeline.SearchRequestProcessor;
@@ -71,6 +73,8 @@ public class NeuralQueryEnricherProcessor extends AbstractProcessor implements S
         if (queryBuilder != null) {
             queryBuilder.visit(new NeuralSearchQueryVisitor(modelId, neuralFieldDefaultIdMap));
         }
+
+        NeuralStats.record(StatName.NEURAL_QUERY_ENRICHER_PROCESSOR_EXECUTIONS).increment();
         return searchRequest;
     }
 

@@ -15,7 +15,8 @@ public enum StatName {
     INFO_DERIVED_STAT("example.counter", StatType.INFO_DERIVED),
     STAT_DERIVED_STAT("example.counter", StatType.STAT_DERIVED),
 
-    TEXT_EMBEDDING_PROCESSOR_EXECUTIONS("ingest_processor.text_embedding.executions", StatType.COUNTER_EVENT);
+    TEXT_EMBEDDING_PROCESSOR_EXECUTIONS("ingest_processor.text_embedding.executions", StatType.COUNTER_EVENT),
+    NEURAL_QUERY_ENRICHER_PROCESSOR_EXECUTIONS("search_processor.neural_query_enricher.executions", StatType.COUNTER_EVENT);
 
     @Getter
     private final String name;
