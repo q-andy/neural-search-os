@@ -10,10 +10,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.opensearch.client.Response;
 import org.opensearch.client.Request;
+import org.opensearch.common.settings.Settings;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.core.xcontent.MediaTypeRegistry;
 import org.opensearch.neuralsearch.BaseNeuralSearchIT;
 import org.opensearch.neuralsearch.plugin.NeuralSearch;
+import org.opensearch.neuralsearch.query.NeuralQueryBuilder;
 import org.opensearch.neuralsearch.stats.NeuralStats;
 
 import java.io.IOException;
@@ -121,6 +123,43 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
 
         } finally {
             wipeOfTestResources(INDEX_NAME, INGEST_PIPELINE_NAME, modelId, null);
+        }
+    }
+
+    public void test_happyCase_neuralQueryEnricher() throws Exception {
+        NeuralStats.instance().resetStats();
+
+        String modelId = null;
+        try {
+            modelId = prepareModel();
+            createSearchRequestProcessor(modelId, SEARCH_PIPELINE_NAME);
+            createPipelineProcessor(modelId, INGEST_PIPELINE_NAME, ProcessorType.TEXT_EMBEDDING);
+            createIndexWithPipeline(INDEX_NAME, "IndexMappings.json", INGEST_PIPELINE_NAME);
+
+            ingestDocument(INDEX_NAME, INGEST_DOC1);
+            ingestDocument(INDEX_NAME, INGEST_DOC2);
+
+            updateIndexSettings(INDEX_NAME, Settings.builder().put("index.search.default_pipeline", SEARCH_PIPELINE_NAME));
+            NeuralQueryBuilder neuralQueryBuilder = NeuralQueryBuilder.builder()
+                .fieldName(TITLE_KNN_FIELD)
+                .queryText("Second")
+                .k(10)
+                .build();
+
+            Map<String, Object> response = search(INDEX_NAME, neuralQueryBuilder, 2);
+            log.info(response);
+            assertFalse(response.isEmpty());
+
+            // Stats request
+            Response statResponse = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
+            String responseBody = EntityUtils.toString(statResponse.getEntity());
+            Map<String, Object> nodeStats = parseNodeStatsResponse(responseBody).getFirst();
+
+            log.info(nodeStats);
+            assertEquals(2, getNestedValue(nodeStats, "ingest_processor.text_embedding.executions"));
+            assertEquals(1, getNestedValue(nodeStats, "search_processor.neural_query_enricher.executions"));
+        } finally {
+            wipeOfTestResources(INDEX_NAME, INGEST_PIPELINE_NAME, modelId, SEARCH_PIPELINE_NAME);
         }
     }
 
