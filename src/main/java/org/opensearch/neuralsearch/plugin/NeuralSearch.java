@@ -64,6 +64,8 @@ import org.opensearch.neuralsearch.query.NeuralSparseQueryBuilder;
 import org.opensearch.neuralsearch.query.ext.RerankSearchExtBuilder;
 import org.opensearch.neuralsearch.rest.RestNeuralStatsHandler;
 import org.opensearch.neuralsearch.search.query.HybridQueryPhaseSearcher;
+import org.opensearch.neuralsearch.transport.ClearNeuralStatsAction;
+import org.opensearch.neuralsearch.transport.ClearNeuralStatsTransportAction;
 import org.opensearch.neuralsearch.transport.NeuralStatsAction;
 import org.opensearch.neuralsearch.transport.NeuralStatsTransportAction;
 import org.opensearch.neuralsearch.util.NeuralSearchClusterUtil;
@@ -146,7 +148,10 @@ public class NeuralSearch extends Plugin implements ActionPlugin, SearchPlugin, 
 
     @Override
     public List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> getActions() {
-        return Arrays.asList(new ActionHandler<>(NeuralStatsAction.INSTANCE, NeuralStatsTransportAction.class));
+        return Arrays.asList(
+            new ActionHandler<>(NeuralStatsAction.INSTANCE, NeuralStatsTransportAction.class),
+            new ActionHandler<>(ClearNeuralStatsAction.INSTANCE, ClearNeuralStatsTransportAction.class)
+        );
     }
 
     @Override

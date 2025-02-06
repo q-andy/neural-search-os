@@ -8,13 +8,12 @@ import lombok.Getter;
 import org.opensearch.action.support.nodes.BaseNodesRequest;
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.common.io.stream.StreamOutput;
+import org.opensearch.neuralsearch.stats.NeuralStatsInput;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
- * NeuralStatsRequest gets node (cluster) level Stats for KNN
+ * NeuralStatsRequest gets node (cluster) level Stats for Neural
  * By default, all parameters will be true
  */
 public class NeuralStatsRequest extends BaseNodesRequest<NeuralStatsRequest> {
@@ -24,14 +23,14 @@ public class NeuralStatsRequest extends BaseNodesRequest<NeuralStatsRequest> {
      */
     public static final String ALL_STATS_KEY = "_all";
     @Getter
-    private final Set<String> statsToBeRetrieved;
+    private final NeuralStatsInput neuralStatsInput;
 
     /**
      * Empty constructor needed for NeuralStatsTransportAction
      */
     public NeuralStatsRequest() {
         super((String[]) null);
-        statsToBeRetrieved = new HashSet<>();
+        this.neuralStatsInput = new NeuralStatsInput();
     }
 
     /**
@@ -42,7 +41,7 @@ public class NeuralStatsRequest extends BaseNodesRequest<NeuralStatsRequest> {
      */
     public NeuralStatsRequest(StreamInput in) throws IOException {
         super(in);
-        statsToBeRetrieved = in.readSet(StreamInput::readString);
+        this.neuralStatsInput = new NeuralStatsInput(in);
     }
 
     /**
@@ -50,14 +49,14 @@ public class NeuralStatsRequest extends BaseNodesRequest<NeuralStatsRequest> {
      *
      * @param nodeIds NodeIDs from which to retrieve stats
      */
-    public NeuralStatsRequest(String... nodeIds) {
+    public NeuralStatsRequest(String[] nodeIds, NeuralStatsInput neuralStatsInput) {
         super(nodeIds);
-        statsToBeRetrieved = new HashSet<>();
+        this.neuralStatsInput = neuralStatsInput;
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        out.writeStringCollection(statsToBeRetrieved);
+        neuralStatsInput.writeTo(out);
     }
 }

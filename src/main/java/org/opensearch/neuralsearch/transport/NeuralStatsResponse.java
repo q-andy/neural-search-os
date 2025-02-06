@@ -14,6 +14,7 @@ import org.opensearch.core.xcontent.ToXContentObject;
 import org.opensearch.core.xcontent.XContentBuilder;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -74,24 +75,51 @@ public class NeuralStatsResponse extends BaseNodesResponse<NeuralStatsNodeRespon
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         // Return cluster level stats
-        for (Map.Entry<String, Object> clusterStat : clusterStats.entrySet()) {
-            builder.field(clusterStat.getKey(), clusterStat.getValue());
-        }
+        Map<String, Object> nestedClusterStats = convertFlatToNestedMap(new TreeMap<>(clusterStats));
+        buildNestedMapXContent(builder, nestedClusterStats);
 
         // Return node level stats
         String nodeId;
         DiscoveryNode node;
         builder.startObject(NODES_KEY);
-        for (NeuralStatsNodeResponse neuralStats : getNodes()) {
-            node = neuralStats.getNode();
+        for (NeuralStatsNodeResponse neuralStatsResponse : getNodes()) {
+            node = neuralStatsResponse.getNode();
             nodeId = node.getId();
             builder.startObject(nodeId);
-            neuralStats.toXContent(builder, params);
+            Map<String, Object> nestedMap = convertFlatToNestedMap(new TreeMap<>(neuralStatsResponse.getStatsMap()));
+            buildNestedMapXContent(builder, nestedMap);
             builder.endObject();
-            System.out.println("Timothy");
-            System.out.println(neuralStats.getStatsMap());
         }
         builder.endObject();
         return builder;
+    }
+
+    private void buildNestedMapXContent(XContentBuilder builder, Map<String, Object> map) throws IOException {
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            if (entry.getValue() instanceof Map) {
+                builder.startObject(entry.getKey());
+                buildNestedMapXContent(builder, (Map<String, Object>) entry.getValue());
+                builder.endObject();
+            } else {
+                builder.field(entry.getKey(), entry.getValue());
+            }
+        }
+    }
+
+    private Map<String, Object> convertFlatToNestedMap(Map<String, Object> map) {
+        Map<String, Object> nestedMap = new TreeMap<>();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            putNested(nestedMap, entry.getKey(), entry.getValue());
+        }
+        return nestedMap;
+    }
+
+    private void putNested(Map<String, Object> map, String path, Object value) {
+        String[] parts = path.split("\\.");
+        Map<String, Object> current = map;
+        for (int i = 0; i < parts.length - 1; i++) {
+            current = (Map<String, Object>) current.computeIfAbsent(parts[i], k -> new HashMap<String, Object>());
+        }
+        current.put(parts[parts.length - 1], value);
     }
 }

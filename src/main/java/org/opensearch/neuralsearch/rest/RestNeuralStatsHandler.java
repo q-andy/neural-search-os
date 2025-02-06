@@ -9,6 +9,9 @@ import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang.StringUtils;
 import org.opensearch.client.node.NodeClient;
+import org.opensearch.neuralsearch.stats.NeuralStatsInput;
+import org.opensearch.neuralsearch.transport.ClearNeuralStatsAction;
+import org.opensearch.neuralsearch.transport.ClearNeuralStatsRequest;
 import org.opensearch.neuralsearch.transport.NeuralStatsAction;
 import org.opensearch.neuralsearch.transport.NeuralStatsRequest;
 import org.opensearch.rest.BaseRestHandler;
@@ -19,7 +22,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 
 import static org.opensearch.neuralsearch.plugin.NeuralSearch.NEURAL_BASE_URI;
 
@@ -27,6 +29,7 @@ import static org.opensearch.neuralsearch.plugin.NeuralSearch.NEURAL_BASE_URI;
 @AllArgsConstructor
 public class RestNeuralStatsHandler extends BaseRestHandler {
     private static final String NAME = "neural_stats_action";
+    public static final String CLEAR_PARAM = "_clear";
 
     @Override
     public String getName() {
@@ -45,14 +48,33 @@ public class RestNeuralStatsHandler extends BaseRestHandler {
 
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) {
-        // Read inputs and convert to BaseNodesRequest with correct info configured
-        NeuralStatsRequest neuralStatsRequest = getRequest(request);
+        if (request.param("stat", "").equals(CLEAR_PARAM)) {
+            // TODO : Hacky, possible collisions. Should be refactored into separate endpoint later
+            String[] nodeIdsArr = null;
+            String nodesIdsStr = request.param("nodeId");
+            if (StringUtils.isNotEmpty(nodesIdsStr)) {
+                nodeIdsArr = nodesIdsStr.split(",");
+            }
 
-        return channel -> client.execute(
-            NeuralStatsAction.INSTANCE,
-            neuralStatsRequest,
-            new RestActions.NodesResponseRestListener<>(channel)
-        );
+            ClearNeuralStatsRequest clearNeuralStatsRequest = new ClearNeuralStatsRequest(nodeIdsArr);
+            clearNeuralStatsRequest.timeout(request.param("timeout"));
+
+            return channel -> client.execute(
+                ClearNeuralStatsAction.INSTANCE,
+                clearNeuralStatsRequest,
+                new RestActions.NodesResponseRestListener<>(channel)
+            );
+        } else {
+            // Read inputs and convert to BaseNodesRequest with correct info configured
+            NeuralStatsRequest neuralStatsRequest = getRequest(request);
+
+            return channel -> client.execute(
+                NeuralStatsAction.INSTANCE,
+                neuralStatsRequest,
+                new RestActions.NodesResponseRestListener<>(channel)
+            );
+        }
+
     }
 
     /**
@@ -69,7 +91,7 @@ public class RestNeuralStatsHandler extends BaseRestHandler {
             nodeIdsArr = nodesIdsStr.split(",");
         }
 
-        NeuralStatsRequest neuralStatsRequest = new NeuralStatsRequest(nodeIdsArr);
+        NeuralStatsRequest neuralStatsRequest = new NeuralStatsRequest(nodeIdsArr, new NeuralStatsInput());
         neuralStatsRequest.timeout(request.param("timeout"));
 
         // parse the stats the customer wants to see
@@ -86,22 +108,23 @@ public class RestNeuralStatsHandler extends BaseRestHandler {
         } else if (statsSet.contains(NeuralStatsRequest.ALL_STATS_KEY)) {
             throw new IllegalArgumentException("Request " + request.path() + " contains _all and individual stats");
         } else {
-            Set<String> invalidStats = new TreeSet<>();
-            for (String stat : statsSet) {
-                // validate request contains valid stats
-                // if (!neuralStatsRequest.addStat(stat)) {
-                // invalidStats.add(stat);
-                // }
-            }
-
-            if (!invalidStats.isEmpty()) {
-                throw new IllegalArgumentException(unrecognized(request, invalidStats, neuralStatsRequest.getStatsToBeRetrieved(), "stat"));
-            }
+            // Validate NeuralStats input is valid
+            // Set<String> invalidStats = new TreeSet<>();
+            // for (String stat : statsSet) {
+            // // validate request contains valid stats
+            // // if (!neuralStatsRequest.addStat(stat)) {
+            // // invalidStats.add(stat);
+            // // }
+            // }
+            //
+            // if (!invalidStats.isEmpty()) {
+            // throw new IllegalArgumentException(unrecognized(request, invalidStats, neuralStatsRequest.getNeuralStatsInput(), "stat"));
+            // }
 
         }
         log.info("pasta");
         log.info(statsSet);
-        log.info(neuralStatsRequest.getStatsToBeRetrieved());
+        log.info(neuralStatsRequest.getNeuralStatsInput());
         return neuralStatsRequest;
     }
 }
