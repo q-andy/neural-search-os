@@ -5,6 +5,7 @@
 package org.opensearch.neuralsearch.stats;
 
 import com.google.common.collect.ImmutableSet;
+import org.opensearch.neuralsearch.processor.ExplanationResponseProcessor;
 import org.opensearch.neuralsearch.processor.NeuralQueryEnricherProcessor;
 import org.opensearch.neuralsearch.processor.RRFProcessor;
 import org.opensearch.neuralsearch.processor.combination.ArithmeticMeanScoreCombinationTechnique;
@@ -29,6 +30,7 @@ public class DerivedStats {
     public static final String RESPONSE_PROCESSORS_KEY = "response_processors";
     public static final String PHASE_PROCESSORS_KEY = "phase_results_processors";
     public static final String COMBINATION_KEY = "combination";
+    public static final String NORMALIZATION_KEY = "normalization";
     public static final String TECHNIQUE_KEY = "technique";
 
     public static final Set<String> COMBINATION_TECHNIQUES = ImmutableSet.of(
@@ -47,14 +49,6 @@ public class DerivedStats {
         return INSTANCE;
     }
 
-    // private final Map<String, NeuralStat<?>> derivedStatsMap;
-
-    private Map<String, Long> aggregatedNodeResponse;
-
-    public DerivedStats() {
-
-    }
-
     public Map<String, Long> aggregateNodesResponses(List<Map<String, Long>> nodeResponses) {
         Map<String, Long> summedMap = new HashMap<>();
         for (Map<String, Long> map : nodeResponses) {
@@ -67,11 +61,11 @@ public class DerivedStats {
 
     public Map<String, Object> addDerivedStats(List<Map<String, Long>> nodeResponses) {
         // Reference to provide derived methods access to node Responses
-        this.aggregatedNodeResponse = aggregateNodesResponses(nodeResponses);
+        Map<String, Long> aggregatedNodeResponses = aggregateNodesResponses(nodeResponses);
 
         Map<String, Object> computedDerivedStats = new TreeMap<>();
 
-        // Initialize empty so stat names are visible in response even if not calculated
+        // Initialize empty map with keys so stat names are visible in JSON even if not calculated
         for (StatName stat : EnumSet.allOf(StatName.class)) {
             if (stat.getStatType() == StatType.INFO_DERIVED) {
                 computedDerivedStats.put(stat.getName(), 0L);
@@ -79,9 +73,7 @@ public class DerivedStats {
         }
 
         calculateDerivedStats(computedDerivedStats);
-        computedDerivedStats.putAll(aggregatedNodeResponse);
-        // Reset reference to not store
-        this.aggregatedNodeResponse = null;
+        computedDerivedStats.putAll(aggregatedNodeResponses);
         return computedDerivedStats;
     }
 
@@ -95,72 +87,110 @@ public class DerivedStats {
         stats.put(StatName.CLUSTER_VERSION.getName(), version);
     }
 
-    private String addSearchProcessorStats(Map<String, Object> stats) {
-        List<Map<String, Object>> configs = StatsInfoUtil.instance().listAllPipelineConfigs();
-        System.out.println(configs);
+    private void addSearchProcessorStats(Map<String, Object> stats) {
+        List<Map<String, Object>> pipelineConfigs = StatsInfoUtil.instance().listAllPipelineConfigs();
 
-        for (Map<String, Object> config : configs) {
-            for (Map.Entry<String, Object> pipelineConfig : config.entrySet()) {
-                String searchProcessorType = pipelineConfig.getKey();
-                switch (searchProcessorType) {
+        System.out.println(pipelineConfigs);
+        for (Map<String, Object> pipelineConfig : pipelineConfigs) {
+            for (Map.Entry<String, Object> entry : pipelineConfig.entrySet()) {
+                String processorType = entry.getKey();
+                List<Map<String, Object>> processors = asListOfMaps(entry.getValue());
+
+                switch (processorType) {
                     case REQUEST_PROCESSORS_KEY:
-                        countSearchRequestProcessors(stats, (List<Map<String, Object>>) pipelineConfig.getValue());
+                        countSearchRequestProcessors(stats, processors);
                         break;
                     case RESPONSE_PROCESSORS_KEY:
-                        countSearchResponseProcessors(stats, (List<Map<String, Object>>) pipelineConfig.getValue());
+                        countSearchResponseProcessors(stats, processors);
                         break;
                     case PHASE_PROCESSORS_KEY:
-                        countSearchPhaseResultsProcessors(stats, (List<Map<String, Object>>) pipelineConfig.getValue());
+                        countSearchPhaseResultsProcessors(stats, processors);
                         break;
                 }
             }
         }
-        return configs.toString();
     }
 
     private void countSearchRequestProcessors(Map<String, Object> stats, List<Map<String, Object>> pipelineConfig) {
-        for (Map<String, Object> processor : pipelineConfig) {
-            if (processor.get(NeuralQueryEnricherProcessor.TYPE) != null) {
-                // String path = String.format("pipelines.search.%s.%s.count", REQUEST_PROCESSORS_KEY, NeuralQueryEnricherProcessor.TYPE);
-
-                increment(stats, StatName.SEARCH_PIPELINE_NEURAL_QUERY_ENRICHER_PROCESSOR_COUNT.getName());
-            }
-        }
+        countProcessors(
+            stats,
+            pipelineConfig,
+            NeuralQueryEnricherProcessor.TYPE,
+            StatName.SEARCH_PIPELINE_NEURAL_QUERY_ENRICHER_PROCESSOR_COUNT
+        );
     }
 
     private void countSearchResponseProcessors(Map<String, Object> stats, List<Map<String, Object>> pipelineConfig) {
-
+        countProcessors(stats, pipelineConfig, ExplanationResponseProcessor.TYPE, StatName.SEARCH_PIPELINE_EXPLANATION_PROCESSOR_COUNT);
     }
 
     private void countSearchPhaseResultsProcessors(Map<String, Object> stats, List<Map<String, Object>> pipelineConfig) {
-        for (Map<String, Object> processor : pipelineConfig) {
-            if (processor.get(RRFProcessor.TYPE) != null) {
-                // String processorPath = String.format("pipelines.search.%s.%s.count", PHASE_PROCESSORS_KEY, RRFProcessor.TYPE);
-                increment(stats, StatName.SEARCH_PIPELINE_RRF_PROCESSOR_COUNT.getName());
-                String combinationTechnique = ((Map<String, Map<String, String>>) processor.get(RRFProcessor.TYPE)).get(COMBINATION_KEY)
-                    .get(TECHNIQUE_KEY);
-                if (COMBINATION_TECHNIQUES.contains(combinationTechnique)) {
-                    // String techniquePath = String.format(
-                    // "pipelines.search.normalization.%s.techniques.%s.count",
-                    // COMBINATION_KEY,
-                    // combinationTechnique
-                    // );
-                    increment(stats, StatName.SEARCH_PIPELINE_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT.getName());
+        countProcessors(stats, pipelineConfig, RRFProcessor.TYPE, StatName.SEARCH_PIPELINE_RRF_PROCESSOR_COUNT);
+
+        countCombinationTechniques(
+            stats,
+            pipelineConfig,
+            RRFScoreCombinationTechnique.TECHNIQUE_NAME,
+            StatName.SEARCH_PIPELINE_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT
+        );
+    }
+
+    private void countProcessors(Map<String, Object> stats, List<Map<String, Object>> processors, String processorType, StatName statName) {
+        long count = processors.stream().filter(p -> p.containsKey(processorType)).count();
+        incrementBy(stats, statName.getName(), count);
+    }
+
+    private void countCombinationTechniques(
+        Map<String, Object> stats,
+        List<Map<String, Object>> processors,
+        String combinationTechnique,
+        StatName statName
+    ) {
+        for (Map<String, Object> processorObj : processors) {
+            Map<String, Object> processor = asMap(processorObj);
+            for (Object processorConfigObj : processor.values()) {
+                Map<String, Object> config = asMap(processorConfigObj);
+                Map<String, Object> combination = asMap(config.get(COMBINATION_KEY));
+                String technique = getValue(combination, TECHNIQUE_KEY, String.class);
+                if (technique != null && technique.equals(combinationTechnique)) {
+                    increment(stats, statName.getName());
                 }
             }
         }
     }
 
     private void increment(Map<String, Object> stats, String path) {
+        incrementBy(stats, path, 1L);
+    }
+
+    private void incrementBy(Map<String, Object> stats, String path, Long amount) {
         Object stat = stats.get(path);
         if (stat instanceof Long) {
-            stats.put(path, (Long) stat + 1L);
+            stats.put(path, (Long) stat + amount);
         }
     }
 
-    // private String addIngestProcessorStats() {
-    //// List<String> configs = StatsInfoUtil.instance().listAllPipelineConfigs();
-    //// System.out.println(configs);
-    //// return configs.toString();
-    // }
+    @SuppressWarnings("unchecked")
+    private <T> T getValue(Map<String, Object> map, String key, Class<T> clazz) {
+        if (map == null || key == null) return null;
+        Object value = map.get(key);
+        return clazz.isInstance(value) ? clazz.cast(value) : null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> asMap(Object value) {
+        return value instanceof Map ? (Map<String, Object>) value : null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> asListOfMaps(Object value) {
+        if (value instanceof List) {
+            List<?> list = (List<?>) value;
+            for (Object item : list) {
+                if (!(item instanceof Map)) return null;
+            }
+            return (List<Map<String, Object>>) value;
+        }
+        return null;
+    }
 }
