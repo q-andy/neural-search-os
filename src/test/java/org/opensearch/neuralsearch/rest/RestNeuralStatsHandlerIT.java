@@ -73,7 +73,17 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
         log.info(clusterStats);
 
         assertEquals(1, getNestedValue(clusterStats, "pipelines.search.phase_results_processors.score-ranker-processor.count"));
-        assertEquals(1, getNestedValue(clusterStats, "pipelines.search.normalization.techniques.rrf.count"));
+        assertEquals(1, getNestedValue(clusterStats, "pipelines.search.normalization.combination.techniques.rrf.count"));
+
+        // Avoid double counts
+        response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
+        responseBody = EntityUtils.toString(response.getEntity());
+        clusterStats = parseStatsResponse(responseBody);
+
+        log.info(clusterStats);
+
+        assertEquals(1, getNestedValue(clusterStats, "pipelines.search.phase_results_processors.score-ranker-processor.count"));
+        assertEquals(1, getNestedValue(clusterStats, "pipelines.search.normalization.combination.techniques.rrf.count"));
     }
 
     public void test_happyCase_textEmbedding() throws Exception {

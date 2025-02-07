@@ -10,14 +10,16 @@ import java.util.HashSet;
 import java.util.Set;
 
 public enum StatName {
-    // TODO : stat type not currently used
-    EVENT_STAT("example.counter", StatType.COUNTER_EVENT),
-    INFO_DERIVED_STAT("example.info_derived", StatType.INFO_DERIVED),
-    STAT_DERIVED_STAT("example.stat_derived", StatType.STAT_DERIVED),
-
-    CLUSTER_VERSION("derived.cluster_version", StatType.INFO_DERIVED),
-    SEARCH_PIPELINE_CONFIGS("derived.search_pipeline_configs", StatType.INFO_DERIVED),
-
+    CLUSTER_VERSION("cluster_version", StatType.INFO_DERIVED),
+    SEARCH_PIPELINE_NEURAL_QUERY_ENRICHER_PROCESSOR_COUNT(
+        "pipelines.search.request_processors.neural_query_enricher_processor.count",
+        StatType.INFO_DERIVED
+    ),
+    SEARCH_PIPELINE_RRF_PROCESSOR_COUNT("pipelines.search.phase_results_processors.score-ranker-processor.count", StatType.INFO_DERIVED),
+    SEARCH_PIPELINE_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT(
+        "pipelines.search.normalization.combination.techniques.rrf.count",
+        StatType.INFO_DERIVED
+    ),
     TEXT_EMBEDDING_PROCESSOR_EXECUTIONS("ingest_processor.text_embedding.executions", StatType.COUNTER_EVENT);
 
     @Getter

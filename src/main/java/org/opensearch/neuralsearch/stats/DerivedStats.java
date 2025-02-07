@@ -12,9 +12,11 @@ import org.opensearch.neuralsearch.processor.combination.GeometricMeanScoreCombi
 import org.opensearch.neuralsearch.processor.combination.HarmonicMeanScoreCombinationTechnique;
 import org.opensearch.neuralsearch.processor.combination.RRFScoreCombinationTechnique;
 import org.opensearch.neuralsearch.stats.names.StatName;
+import org.opensearch.neuralsearch.stats.names.StatType;
 import org.opensearch.neuralsearch.util.NeuralSearchClusterUtil;
 import org.opensearch.neuralsearch.util.StatsInfoUtil;
 
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,10 +52,7 @@ public class DerivedStats {
     private Map<String, Long> aggregatedNodeResponse;
 
     public DerivedStats() {
-        // this.derivedStatsMap = new ConcurrentSkipListMap<>();
 
-        // register(StatName.CLUSTER_VERSION, DerivedStats::clusterVersion);
-        // register(StatName.SEARCH_PIPELINE_CONFIGS, DerivedStats::testPipelineInfo);
     }
 
     public Map<String, Long> aggregateNodesResponses(List<Map<String, Long>> nodeResponses) {
@@ -71,6 +70,13 @@ public class DerivedStats {
         this.aggregatedNodeResponse = aggregateNodesResponses(nodeResponses);
 
         Map<String, Object> computedDerivedStats = new TreeMap<>();
+
+        // Initialize empty so stat names are visible in response even if not calculated
+        for (StatName stat : EnumSet.allOf(StatName.class)) {
+            if (stat.getStatType() == StatType.INFO_DERIVED) {
+                computedDerivedStats.put(stat.getName(), 0L);
+            }
+        }
 
         calculateDerivedStats(computedDerivedStats);
         computedDerivedStats.putAll(aggregatedNodeResponse);
@@ -115,8 +121,9 @@ public class DerivedStats {
     private void countSearchRequestProcessors(Map<String, Object> stats, List<Map<String, Object>> pipelineConfig) {
         for (Map<String, Object> processor : pipelineConfig) {
             if (processor.get(NeuralQueryEnricherProcessor.TYPE) != null) {
-                String path = String.format("pipelines.search.%s.%s.count", REQUEST_PROCESSORS_KEY, NeuralQueryEnricherProcessor.TYPE);
-                increment(stats, path);
+                // String path = String.format("pipelines.search.%s.%s.count", REQUEST_PROCESSORS_KEY, NeuralQueryEnricherProcessor.TYPE);
+
+                increment(stats, StatName.SEARCH_PIPELINE_NEURAL_QUERY_ENRICHER_PROCESSOR_COUNT.getName());
             }
         }
     }
@@ -128,20 +135,23 @@ public class DerivedStats {
     private void countSearchPhaseResultsProcessors(Map<String, Object> stats, List<Map<String, Object>> pipelineConfig) {
         for (Map<String, Object> processor : pipelineConfig) {
             if (processor.get(RRFProcessor.TYPE) != null) {
-                String processorPath = String.format("pipelines.search.%s.%s.count", PHASE_PROCESSORS_KEY, RRFProcessor.TYPE);
-                increment(stats, processorPath);
+                // String processorPath = String.format("pipelines.search.%s.%s.count", PHASE_PROCESSORS_KEY, RRFProcessor.TYPE);
+                increment(stats, StatName.SEARCH_PIPELINE_RRF_PROCESSOR_COUNT.getName());
                 String combinationTechnique = ((Map<String, Map<String, String>>) processor.get(RRFProcessor.TYPE)).get(COMBINATION_KEY)
                     .get(TECHNIQUE_KEY);
                 if (COMBINATION_TECHNIQUES.contains(combinationTechnique)) {
-                    String techniquePath = String.format("pipelines.search.normalization.techniques.%s.count", combinationTechnique);
-                    increment(stats, techniquePath);
+                    // String techniquePath = String.format(
+                    // "pipelines.search.normalization.%s.techniques.%s.count",
+                    // COMBINATION_KEY,
+                    // combinationTechnique
+                    // );
+                    increment(stats, StatName.SEARCH_PIPELINE_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT.getName());
                 }
             }
         }
     }
 
     private void increment(Map<String, Object> stats, String path) {
-        stats.putIfAbsent(path, 0L);
         Object stat = stats.get(path);
         if (stat instanceof Long) {
             stats.put(path, (Long) stat + 1L);
