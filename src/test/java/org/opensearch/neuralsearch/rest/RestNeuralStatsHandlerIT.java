@@ -14,7 +14,6 @@ import org.opensearch.core.rest.RestStatus;
 import org.opensearch.core.xcontent.MediaTypeRegistry;
 import org.opensearch.neuralsearch.BaseNeuralSearchIT;
 import org.opensearch.neuralsearch.plugin.NeuralSearch;
-import org.opensearch.neuralsearch.stats.NeuralStats;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -64,9 +63,20 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
         executeClearNeuralStatRequest(Collections.emptyList());
     }
 
-    public void test_happyCase_textEmbedding() throws Exception {
-        NeuralStats.instance().resetStats();
+    public void test_rrf() throws Exception {
+        createDefaultRRFSearchPipeline();
 
+        Response response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
+        String responseBody = EntityUtils.toString(response.getEntity());
+        Map<String, Object> clusterStats = parseStatsResponse(responseBody);
+
+        log.info(clusterStats);
+
+        assertEquals(1, getNestedValue(clusterStats, "pipelines.search.phase_results_processors.score-ranker-processor.count"));
+        assertEquals(1, getNestedValue(clusterStats, "pipelines.search.normalization.techniques.rrf.count"));
+    }
+
+    public void test_happyCase_textEmbedding() throws Exception {
         String modelId = null;
         try {
             modelId = uploadTextEmbeddingModel();
@@ -91,8 +101,6 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
     }
 
     public void test_happyCase_clearNeuralStats() throws Exception {
-        NeuralStats.instance().resetStats();
-
         String modelId = null;
         try {
             modelId = uploadTextEmbeddingModel();
@@ -189,6 +197,7 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
     }
 
     private Object getNestedValueHelper(Map<String, Object> map, String[] keys, int depth) {
+        log.info(map);
         if (map == null) {
             return null;
         }

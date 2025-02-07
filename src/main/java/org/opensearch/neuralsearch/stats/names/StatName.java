@@ -12,8 +12,11 @@ import java.util.Set;
 public enum StatName {
     // TODO : stat type not currently used
     EVENT_STAT("example.counter", StatType.COUNTER_EVENT),
-    INFO_DERIVED_STAT("example.counter", StatType.INFO_DERIVED),
-    STAT_DERIVED_STAT("example.counter", StatType.STAT_DERIVED),
+    INFO_DERIVED_STAT("example.info_derived", StatType.INFO_DERIVED),
+    STAT_DERIVED_STAT("example.stat_derived", StatType.STAT_DERIVED),
+
+    CLUSTER_VERSION("derived.cluster_version", StatType.INFO_DERIVED),
+    SEARCH_PIPELINE_CONFIGS("derived.search_pipeline_configs", StatType.INFO_DERIVED),
 
     TEXT_EMBEDDING_PROCESSOR_EXECUTIONS("ingest_processor.text_embedding.executions", StatType.COUNTER_EVENT);
 
