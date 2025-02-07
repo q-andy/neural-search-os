@@ -11,7 +11,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 public enum StatName {
+    // Cluster info
     CLUSTER_VERSION("cluster_version", StatType.INFO_DERIVED),
+
+    // Search processor info
     SEARCH_PIPELINE_NEURAL_QUERY_ENRICHER_PROCESSOR_COUNT(
         "pipelines.search.request_processors.neural_query_enricher.count",
         StatType.INFO_DERIVED
@@ -22,10 +25,37 @@ public enum StatName {
     ),
     SEARCH_PIPELINE_RRF_PROCESSOR_COUNT("pipelines.search.phase_results_processors.score_ranker_processor.count", StatType.INFO_DERIVED),
     SEARCH_PIPELINE_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT(
-        "pipelines.search.normalization.combination.techniques.rrf.count",
+        "pipelines.search.normalization.combination.techniques.rrf",
         StatType.INFO_DERIVED
     ),
-    TEXT_EMBEDDING_PROCESSOR_EXECUTIONS("ingest_processor.text_embedding.executions", StatType.COUNTER_EVENT);
+
+    // Ingest processor info
+    INGEST_PIPELINE_TEXT_CHUNKING_PROCESSOR_COUNT("pipelines.ingest.processors.text_chunking.count", StatType.INFO_DERIVED),
+    INGEST_PIPELINE_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH(
+        "pipelines.ingest.processors.text_chunking.algorithm.fixed_length",
+        StatType.INFO_DERIVED
+    ),
+    INGEST_PIPELINE_TEXT_CHUNKING_ALGORITHM_DELIMITER(
+        "pipelines.ingest.processors.text_chunking.algorithm.delimiter",
+        StatType.INFO_DERIVED
+    ),
+    INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_STANDARD("pipelines.ingest.processors.text_chunking.tokenizer.standard", StatType.INFO_DERIVED),
+    INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_LETTER("pipelines.ingest.processors.text_chunking.tokenizer.letter", StatType.INFO_DERIVED),
+    INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_LOWERCASE(
+        "pipelines.ingest.processors.text_chunking.tokenizer.lowercase",
+        StatType.INFO_DERIVED
+    ),
+    INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_WHITESPACE(
+        "pipelines.ingest.processors.text_chunking.tokenizer.whitespace",
+        StatType.INFO_DERIVED
+    ),
+
+    // Search processor events
+    // Ingest processor events
+    TEXT_EMBEDDING_PROCESSOR_EXECUTIONS("ingest_processor.text_embedding.executions", StatType.COUNTER_EVENT),
+    TEXT_CHUNKING_PROCESSOR_EXECUTIONS("ingest_processor.text_chunking.executions", StatType.COUNTER_EVENT),
+    TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH_EXECUTIONS("ingest_processor.text_chunking.algorithm.fixed_length", StatType.COUNTER_EVENT),
+    TEXT_CHUNKING_ALGORITHM_DELIMITER_EXECUTIONS("ingest_processor.text_chunking.algorithm.delimiter", StatType.COUNTER_EVENT),;
 
     @Getter
     private final String name;

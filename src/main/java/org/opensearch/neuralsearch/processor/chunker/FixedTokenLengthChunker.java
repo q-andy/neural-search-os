@@ -169,6 +169,11 @@ public final class FixedTokenLengthChunker implements Chunker {
         return chunkResult;
     }
 
+    @Override
+    public String getAlgorithmName() {
+        return ALGORITHM_NAME;
+    }
+
     private List<AnalyzeToken> tokenize(final String content, final String tokenizer, final int maxTokenCount) {
         AnalyzeAction.Request analyzeRequest = new AnalyzeAction.Request();
         analyzeRequest.text(content);
