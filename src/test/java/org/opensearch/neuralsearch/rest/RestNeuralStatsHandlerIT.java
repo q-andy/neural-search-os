@@ -18,12 +18,14 @@ import org.opensearch.neuralsearch.stats.names.StatName;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.opensearch.neuralsearch.util.TestUtils.DEFAULT_COMBINATION_METHOD;
@@ -31,9 +33,13 @@ import static org.opensearch.neuralsearch.util.TestUtils.DEFAULT_NORMALIZATION_M
 
 @Log4j2
 public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
-    private static final String INDEX_NAME = "text_embedding_index";
+    private static final String INDEX_NAME = "stats_index";
+    private static final String INDEX_NAME_2 = "stats_index_2";
+    private static final String INDEX_NAME_3 = "stats_index_3";
 
     private static final String INGEST_PIPELINE_NAME = "ingest-pipeline-1";
+    private static final String INGEST_PIPELINE_NAME_2 = "ingest-pipeline-2";
+    private static final String INGEST_PIPELINE_NAME_3 = "ingest-pipeline-3";
     private static final String SEARCH_PIPELINE_NAME = "search-pipeline-1";
     protected static final String QUERY_TEXT = "hello";
     protected static final String LEVEL_1_FIELD = "nested_passages";
@@ -52,6 +58,40 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
 
     private static final String NORMALIZATION_SEARCH_PIPELINE = "normalization-search-pipeline";
 
+    private static final String OUTPUT_FIELD = "body_chunk";
+
+    private static final String INTERMEDIATE_FIELD = "body_chunk_intermediate";
+
+    private static final String FIXED_TOKEN_LENGTH_PIPELINE_WITH_STANDARD_TOKENIZER_NAME =
+        "pipeline-text-chunking-fixed-token-length-standard-tokenizer";
+
+    private static final String FIXED_TOKEN_LENGTH_PIPELINE_WITH_LETTER_TOKENIZER_NAME =
+        "pipeline-text-chunking-fixed-token-length-letter-tokenizer";
+
+    private static final String FIXED_TOKEN_LENGTH_PIPELINE_WITH_LOWERCASE_TOKENIZER_NAME =
+        "pipeline-text-chunking-fixed-token-length-lowercase-tokenizer";
+
+    private static final String DELIMITER_PIPELINE_NAME = "pipeline-text-chunking-delimiter";
+
+    private static final String CASCADE_PIPELINE_NAME = "pipeline-text-chunking-cascade";
+
+    private static final String TEST_DOCUMENT = "processor/chunker/TextChunkingTestDocument.json";
+
+    private static final String TEST_LONG_DOCUMENT = "processor/chunker/TextChunkingTestLongDocument.json";
+
+    private static final Map<String, String> PIPELINE_CONFIGS_BY_NAME = Map.of(
+        FIXED_TOKEN_LENGTH_PIPELINE_WITH_STANDARD_TOKENIZER_NAME,
+        "processor/chunker/PipelineForFixedTokenLengthChunkerWithStandardTokenizer.json",
+        FIXED_TOKEN_LENGTH_PIPELINE_WITH_LETTER_TOKENIZER_NAME,
+        "processor/chunker/PipelineForFixedTokenLengthChunkerWithLetterTokenizer.json",
+        FIXED_TOKEN_LENGTH_PIPELINE_WITH_LOWERCASE_TOKENIZER_NAME,
+        "processor/chunker/PipelineForFixedTokenLengthChunkerWithLowercaseTokenizer.json",
+        DELIMITER_PIPELINE_NAME,
+        "processor/chunker/PipelineForDelimiterChunker.json",
+        CASCADE_PIPELINE_NAME,
+        "processor/chunker/PipelineForCascadedChunker.json"
+    );
+
     public RestNeuralStatsHandlerIT() throws IOException, URISyntaxException {}
 
     @Before
@@ -63,8 +103,65 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
     @After
     public void tearDown() throws Exception {
         super.tearDown();
-
         executeClearNeuralStatRequest(Collections.emptyList());
+    }
+
+    public void test_text_chunking() throws Exception {
+        try {
+            createPipelineProcessor(FIXED_TOKEN_LENGTH_PIPELINE_WITH_STANDARD_TOKENIZER_NAME, INGEST_PIPELINE_NAME);
+            createTextChunkingIndex(INDEX_NAME, INGEST_PIPELINE_NAME);
+
+            String document = getDocumentFromFilePath(TEST_DOCUMENT);
+            ingestDocument(INDEX_NAME, document);
+
+            Response response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
+            String responseBody = EntityUtils.toString(response.getEntity());
+            Map<String, Object> clusterStats = parseStatsResponse(responseBody);
+            Map<String, Object> nodeStats = parseNodeStatsResponse(responseBody).getFirst();
+            log.info(clusterStats);
+
+            assertEquals(1, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_PROCESSOR_COUNT));
+            assertEquals(0, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_ALGORITHM_DELIMITER));
+            assertEquals(1, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH));
+            assertEquals(1, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_STANDARD));
+            assertEquals(0, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_LETTER));
+            assertEquals(0, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_LOWERCASE));
+            assertEquals(0, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_WHITESPACE));
+
+            assertEquals(1, getNestedValue(nodeStats, StatName.TEXT_CHUNKING_PROCESSOR_EXECUTIONS));
+            assertEquals(0, getNestedValue(nodeStats, StatName.TEXT_CHUNKING_ALGORITHM_DELIMITER_EXECUTIONS));
+            assertEquals(1, getNestedValue(nodeStats, StatName.TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH_EXECUTIONS));
+
+            createPipelineProcessor(DELIMITER_PIPELINE_NAME, INGEST_PIPELINE_NAME_2);
+            createTextChunkingIndex(INDEX_NAME_2, INGEST_PIPELINE_NAME_2);
+
+            ingestDocument(INDEX_NAME_2, document);
+            ingestDocument(INDEX_NAME_2, document);
+
+            createPipelineProcessor(FIXED_TOKEN_LENGTH_PIPELINE_WITH_LOWERCASE_TOKENIZER_NAME, INGEST_PIPELINE_NAME_3);
+
+            response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
+            responseBody = EntityUtils.toString(response.getEntity());
+            clusterStats = parseStatsResponse(responseBody);
+            nodeStats = parseNodeStatsResponse(responseBody).getFirst();
+
+            assertEquals(3, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_PROCESSOR_COUNT));
+            assertEquals(1, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_ALGORITHM_DELIMITER));
+            assertEquals(2, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH));
+            assertEquals(1, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_STANDARD));
+            assertEquals(0, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_LETTER));
+            assertEquals(1, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_LOWERCASE));
+            assertEquals(0, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_WHITESPACE));
+
+            assertEquals(3, getNestedValue(nodeStats, StatName.TEXT_CHUNKING_PROCESSOR_EXECUTIONS));
+            assertEquals(2, getNestedValue(nodeStats, StatName.TEXT_CHUNKING_ALGORITHM_DELIMITER_EXECUTIONS));
+            assertEquals(1, getNestedValue(nodeStats, StatName.TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH_EXECUTIONS));
+
+        } finally {
+            wipeOfTestResources(INDEX_NAME, INGEST_PIPELINE_NAME, null, null);
+            wipeOfTestResources(INDEX_NAME_2, INGEST_PIPELINE_NAME_2, null, null);
+            wipeOfTestResources(null, INGEST_PIPELINE_NAME_3, null, null);
+        }
     }
 
     public void test_rrf() throws Exception {
@@ -79,7 +176,7 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
         assertEquals(1, getNestedValue(clusterStats, StatName.SEARCH_PIPELINE_RRF_PROCESSOR_COUNT.getName()));
         assertEquals(1, getNestedValue(clusterStats, StatName.SEARCH_PIPELINE_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT.getName()));
 
-        // Avoid double counts
+        // Check to avoid double counts
         response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
         responseBody = EntityUtils.toString(response.getEntity());
         clusterStats = parseStatsResponse(responseBody);
@@ -198,8 +295,6 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
 
     protected Map<String, Object> parseStatsResponse(String responseBody) throws IOException {
         Map<String, Object> responseMap = createParser(MediaTypeRegistry.getDefaultMediaType().xContent(), responseBody).map();
-        responseMap.remove("cluster_name");
-        responseMap.remove("_nodes");
         return responseMap;
     }
 
@@ -224,6 +319,10 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
         return getNestedValueHelper(map, keys, 0);
     }
 
+    public Object getNestedValue(Map<String, Object> map, StatName statName) {
+        return getNestedValue(map, statName.getName());
+    }
+
     private Object getNestedValueHelper(Map<String, Object> map, String[] keys, int depth) {
         log.info(map);
         if (map == null) {
@@ -242,5 +341,24 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
         }
 
         return null;
+    }
+
+    private void createPipelineProcessor(String pipelineConfig, String pipelineName) throws Exception {
+        URL pipelineURLPath = classLoader.getResource(PIPELINE_CONFIGS_BY_NAME.get(pipelineConfig));
+        Objects.requireNonNull(pipelineURLPath);
+        String requestBody = Files.readString(Path.of(pipelineURLPath.toURI()));
+        createPipelineProcessor(requestBody, pipelineName, "", null);
+    }
+
+    private void createTextChunkingIndex(String indexName, String pipelineName) throws Exception {
+        URL indexSettingsURLPath = classLoader.getResource("processor/chunker/TextChunkingIndexSettings.json");
+        Objects.requireNonNull(indexSettingsURLPath);
+        createIndexWithConfiguration(indexName, Files.readString(Path.of(indexSettingsURLPath.toURI())), pipelineName);
+    }
+
+    private String getDocumentFromFilePath(String filePath) throws Exception {
+        URL documentURLPath = classLoader.getResource(filePath);
+        Objects.requireNonNull(documentURLPath);
+        return Files.readString(Path.of(documentURLPath.toURI()));
     }
 }

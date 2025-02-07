@@ -4,41 +4,43 @@
  */
 package org.opensearch.neuralsearch.stats;
 
-import com.google.common.collect.ImmutableSet;
 import org.opensearch.neuralsearch.processor.ExplanationResponseProcessor;
 import org.opensearch.neuralsearch.processor.NeuralQueryEnricherProcessor;
 import org.opensearch.neuralsearch.processor.RRFProcessor;
-import org.opensearch.neuralsearch.processor.combination.ArithmeticMeanScoreCombinationTechnique;
-import org.opensearch.neuralsearch.processor.combination.GeometricMeanScoreCombinationTechnique;
-import org.opensearch.neuralsearch.processor.combination.HarmonicMeanScoreCombinationTechnique;
+import org.opensearch.neuralsearch.processor.TextChunkingProcessor;
 import org.opensearch.neuralsearch.processor.combination.RRFScoreCombinationTechnique;
 import org.opensearch.neuralsearch.stats.names.StatName;
 import org.opensearch.neuralsearch.stats.names.StatType;
 import org.opensearch.neuralsearch.util.NeuralSearchClusterUtil;
-import org.opensearch.neuralsearch.util.StatsInfoUtil;
+import org.opensearch.neuralsearch.util.PipelineInfoUtil;
 
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 
 public class DerivedStats {
     private static final String AGG_KEY_PREFIX = "all_nodes.";
+    public static final String PROCESSORS_KEY = "processors";
+    public static final String ALGORITHM_KEY = "algorithm";
+
+    // Text chunking processor keys
+    public static final String ALGORITHM_FIXED_TOKEN_LENGTH_KEY = "fixed_token_length";
+    public static final String ALGORITHM_DELIMITER_KEY = "delimiter";
+    public static final String TOKENIZER_KEY = "tokenizer";
+    public static final String TOKENIZER_STANDARD = "standard";
+    public static final String TOKENIZER_LETTER = "letter";
+    public static final String TOKENIZER_LOWERCASE = "lowercase";
+    public static final String TOKENIZER_WHITESPACE = "whitespace";
+
+    // Search Response
     public static final String REQUEST_PROCESSORS_KEY = "request_processors";
     public static final String RESPONSE_PROCESSORS_KEY = "response_processors";
     public static final String PHASE_PROCESSORS_KEY = "phase_results_processors";
     public static final String COMBINATION_KEY = "combination";
     public static final String NORMALIZATION_KEY = "normalization";
     public static final String TECHNIQUE_KEY = "technique";
-
-    public static final Set<String> COMBINATION_TECHNIQUES = ImmutableSet.of(
-        ArithmeticMeanScoreCombinationTechnique.TECHNIQUE_NAME,
-        HarmonicMeanScoreCombinationTechnique.TECHNIQUE_NAME,
-        GeometricMeanScoreCombinationTechnique.TECHNIQUE_NAME,
-        RRFScoreCombinationTechnique.TECHNIQUE_NAME
-    );
 
     private static DerivedStats INSTANCE;
 
@@ -72,14 +74,15 @@ public class DerivedStats {
             }
         }
 
-        calculateDerivedStats(computedDerivedStats);
+        addDerivedStats(computedDerivedStats);
         computedDerivedStats.putAll(aggregatedNodeResponses);
         return computedDerivedStats;
     }
 
-    private void calculateDerivedStats(Map<String, Object> stats) {
+    private void addDerivedStats(Map<String, Object> stats) {
         addClusterVersionStat(stats);
         addSearchProcessorStats(stats);
+        addIngestProcessorStats(stats);
     }
 
     private void addClusterVersionStat(Map<String, Object> stats) {
@@ -87,16 +90,66 @@ public class DerivedStats {
         stats.put(StatName.CLUSTER_VERSION.getName(), version);
     }
 
+    private void addIngestProcessorStats(Map<String, Object> stats) {
+        List<Map<String, Object>> pipelineConfigs = PipelineInfoUtil.instance().getIngestPipelineConfigs();
+
+        for (Map<String, Object> pipelineConfig : pipelineConfigs) {
+            List<Map<String, Object>> ingestProcessors = asListOfMaps(pipelineConfig.get(PROCESSORS_KEY));
+            for (Map<String, Object> ingestProcessor : ingestProcessors) {
+                for (Map.Entry<String, Object> entry : ingestProcessor.entrySet()) {
+                    String processorType = entry.getKey();
+                    Map<String, Object> processorConfig = asMap(entry.getValue());
+                    switch (processorType) {
+                        case TextChunkingProcessor.TYPE:
+                            addTextChunkingProcessorStats(stats, processorConfig);
+                            break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void addTextChunkingProcessorStats(Map<String, Object> stats, Map<String, Object> processorConfig) {
+        increment(stats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_PROCESSOR_COUNT.getName());
+
+        Map<String, Object> algorithmField = asMap(asMap(processorConfig).get(ALGORITHM_KEY));
+        for (Map.Entry<String, Object> field : algorithmField.entrySet()) {
+            switch (field.getKey()) {
+                case ALGORITHM_DELIMITER_KEY:
+                    increment(stats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_ALGORITHM_DELIMITER.getName());
+                    break;
+                case ALGORITHM_FIXED_TOKEN_LENGTH_KEY:
+                    increment(stats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH.getName());
+                    String tokenizer = getValue(asMap(field.getValue()), TOKENIZER_KEY, String.class);
+                    switch (tokenizer) {
+                        case TOKENIZER_STANDARD:
+                            increment(stats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_STANDARD.getName());
+                            break;
+                        case TOKENIZER_LETTER:
+                            increment(stats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_LETTER.getName());
+                            break;
+                        case TOKENIZER_LOWERCASE:
+                            increment(stats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_LOWERCASE.getName());
+                            break;
+                        case TOKENIZER_WHITESPACE:
+                            increment(stats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_WHITESPACE.getName());
+                            break;
+                    }
+                    break;
+            }
+        }
+    }
+
     private void addSearchProcessorStats(Map<String, Object> stats) {
-        List<Map<String, Object>> pipelineConfigs = StatsInfoUtil.instance().listAllPipelineConfigs();
+        List<Map<String, Object>> pipelineConfigs = PipelineInfoUtil.instance().getSearchPipelineConfigs();
 
         System.out.println(pipelineConfigs);
         for (Map<String, Object> pipelineConfig : pipelineConfigs) {
             for (Map.Entry<String, Object> entry : pipelineConfig.entrySet()) {
-                String processorType = entry.getKey();
+                String searchProcessorType = entry.getKey();
                 List<Map<String, Object>> processors = asListOfMaps(entry.getValue());
 
-                switch (processorType) {
+                switch (searchProcessorType) {
                     case REQUEST_PROCESSORS_KEY:
                         countSearchRequestProcessors(stats, processors);
                         break;
