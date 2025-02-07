@@ -14,6 +14,7 @@ import org.opensearch.core.rest.RestStatus;
 import org.opensearch.core.xcontent.MediaTypeRegistry;
 import org.opensearch.neuralsearch.BaseNeuralSearchIT;
 import org.opensearch.neuralsearch.plugin.NeuralSearch;
+import org.opensearch.neuralsearch.stats.names.StatName;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -24,6 +25,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static org.opensearch.neuralsearch.util.TestUtils.DEFAULT_COMBINATION_METHOD;
+import static org.opensearch.neuralsearch.util.TestUtils.DEFAULT_NORMALIZATION_METHOD;
 
 @Log4j2
 public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
@@ -46,7 +50,7 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
     private final String INGEST_DOC4 = Files.readString(Path.of(classLoader.getResource("processor/ingest_doc4.json").toURI()));
     private final String INGEST_DOC5 = Files.readString(Path.of(classLoader.getResource("processor/ingest_doc5.json").toURI()));
 
-    private final String TITLE_KNN_FIELD = "title_knn";
+    private static final String NORMALIZATION_SEARCH_PIPELINE = "normalization-search-pipeline";
 
     public RestNeuralStatsHandlerIT() throws IOException, URISyntaxException {}
 
@@ -72,8 +76,8 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
 
         log.info(clusterStats);
 
-        assertEquals(1, getNestedValue(clusterStats, "pipelines.search.phase_results_processors.score-ranker-processor.count"));
-        assertEquals(1, getNestedValue(clusterStats, "pipelines.search.normalization.combination.techniques.rrf.count"));
+        assertEquals(1, getNestedValue(clusterStats, StatName.SEARCH_PIPELINE_RRF_PROCESSOR_COUNT.getName()));
+        assertEquals(1, getNestedValue(clusterStats, StatName.SEARCH_PIPELINE_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT.getName()));
 
         // Avoid double counts
         response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
@@ -82,8 +86,22 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
 
         log.info(clusterStats);
 
-        assertEquals(1, getNestedValue(clusterStats, "pipelines.search.phase_results_processors.score-ranker-processor.count"));
-        assertEquals(1, getNestedValue(clusterStats, "pipelines.search.normalization.combination.techniques.rrf.count"));
+        assertEquals(1, getNestedValue(clusterStats, StatName.SEARCH_PIPELINE_RRF_PROCESSOR_COUNT.getName()));
+        assertEquals(1, getNestedValue(clusterStats, StatName.SEARCH_PIPELINE_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT.getName()));
+    }
+
+    public void test_explain() throws Exception {
+        createSearchPipeline(NORMALIZATION_SEARCH_PIPELINE, DEFAULT_NORMALIZATION_METHOD, DEFAULT_COMBINATION_METHOD, Map.of(), true);
+        createSearchPipeline(NORMALIZATION_SEARCH_PIPELINE + 2, DEFAULT_NORMALIZATION_METHOD, DEFAULT_COMBINATION_METHOD, Map.of(), true);
+        createSearchPipeline(NORMALIZATION_SEARCH_PIPELINE + 3, DEFAULT_NORMALIZATION_METHOD, DEFAULT_COMBINATION_METHOD, Map.of(), true);
+
+        Response response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
+        String responseBody = EntityUtils.toString(response.getEntity());
+        Map<String, Object> clusterStats = parseStatsResponse(responseBody);
+
+        log.info(clusterStats);
+
+        assertEquals(3, getNestedValue(clusterStats, StatName.SEARCH_PIPELINE_EXPLANATION_PROCESSOR_COUNT.getName()));
     }
 
     public void test_happyCase_textEmbedding() throws Exception {
@@ -103,14 +121,14 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
             List<Map<String, Object>> nodesStats = parseNodeStatsResponse(responseBody);
 
             log.info(nodesStats);
-            assertEquals(3, getNestedValue(nodesStats.getFirst(), "ingest_processor.text_embedding.executions"));
+            assertEquals(3, getNestedValue(nodesStats.getFirst(), StatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS.getName()));
 
         } finally {
             wipeOfTestResources(INDEX_NAME, INGEST_PIPELINE_NAME, modelId, null);
         }
     }
 
-    public void test_happyCase_clearNeuralStats() throws Exception {
+    public void test_clearNeuralStats() throws Exception {
         String modelId = null;
         try {
             modelId = uploadTextEmbeddingModel();
@@ -126,7 +144,7 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
             List<Map<String, Object>> nodesStats = parseNodeStatsResponse(responseBody);
 
             log.info(nodesStats);
-            assertEquals(2, getNestedValue(nodesStats.getFirst(), "ingest_processor.text_embedding.executions"));
+            assertEquals(2, getNestedValue(nodesStats.getFirst(), StatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS.getName()));
 
             executeClearNeuralStatRequest(Collections.emptyList());
 
@@ -135,7 +153,7 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
             nodesStats = parseNodeStatsResponse(responseBody);
 
             log.info(nodesStats);
-            assertEquals(0, getNestedValue(nodesStats.getFirst(), "ingest_processor.text_embedding.executions"));
+            assertEquals(0, getNestedValue(nodesStats.getFirst(), StatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS.getName()));
 
         } finally {
             wipeOfTestResources(INDEX_NAME, INGEST_PIPELINE_NAME, modelId, null);
