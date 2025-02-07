@@ -25,6 +25,8 @@ public class ClearNeuralStatsTransportAction extends TransportNodesAction<
     ClearNeuralStatsResponse,
     ClearNeuralStatsNodeRequest,
     ClearNeuralStatsNodeResponse> {
+    private final NeuralStats neuralStats;
+
     /**
      * Constructor
      *
@@ -38,7 +40,8 @@ public class ClearNeuralStatsTransportAction extends TransportNodesAction<
         ThreadPool threadPool,
         ClusterService clusterService,
         TransportService transportService,
-        ActionFilters actionFilters
+        ActionFilters actionFilters,
+        NeuralStats neuralStats
     ) {
         super(
             ClearNeuralStatsAction.NAME,
@@ -51,6 +54,7 @@ public class ClearNeuralStatsTransportAction extends TransportNodesAction<
             ThreadPool.Names.MANAGEMENT,
             ClearNeuralStatsNodeResponse.class
         );
+        this.neuralStats = neuralStats;
     }
 
     @Override
@@ -74,7 +78,7 @@ public class ClearNeuralStatsTransportAction extends TransportNodesAction<
 
     @Override
     protected ClearNeuralStatsNodeResponse nodeOperation(ClearNeuralStatsNodeRequest request) {
-        NeuralStats.instance().resetStats();
+        neuralStats.resetStats();
         return new ClearNeuralStatsNodeResponse(clusterService.localNode());
     }
 }

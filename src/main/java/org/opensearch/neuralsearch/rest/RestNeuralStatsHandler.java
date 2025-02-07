@@ -122,7 +122,6 @@ public class RestNeuralStatsHandler extends BaseRestHandler {
             // }
 
         }
-        log.info("pasta");
         log.info(statsSet);
         log.info(neuralStatsRequest.getNeuralStatsInput());
         return neuralStatsRequest;

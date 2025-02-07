@@ -59,9 +59,7 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
             ThreadPool.Names.MANAGEMENT,
             NeuralStatsNodeResponse.class
         );
-        // TODO : inject rather than singleton here
-        // this.neuralStats = neuralStats;
-        this.neuralStats = NeuralStats.instance();
+        this.neuralStats = neuralStats;
     }
 
     @Override
@@ -73,7 +71,6 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
 
         Map<String, Object> clusterStats = new HashMap<>();
 
-        clusterStats.put("cluster_level_stat_1", "Yay!");
         // for (String statName : neuralStats.getStats().keySet()) {
         // clusterStats.put(statName, neuralStats.getStats().get(statName).getValue());
         // }'
