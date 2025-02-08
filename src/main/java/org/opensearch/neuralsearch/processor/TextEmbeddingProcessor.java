@@ -16,7 +16,6 @@ import org.opensearch.ingest.IngestDocument;
 import org.opensearch.neuralsearch.ml.MLCommonsClientAccessor;
 
 import lombok.extern.log4j.Log4j2;
-import org.opensearch.neuralsearch.stats.EventStatsManager;
 
 /**
  * This processor is used for user input data text embedding processing, model_id can be used to indicate which model user use,
@@ -48,8 +47,6 @@ public final class TextEmbeddingProcessor extends InferenceProcessor {
         List<String> inferenceList,
         BiConsumer<IngestDocument, Exception> handler
     ) {
-        EventStatsManager.recordTextEmbeddingExecution();
-
         mlCommonsClientAccessor.inferenceSentences(this.modelId, inferenceList, ActionListener.wrap(vectors -> {
             setVectorFieldsToDocument(ingestDocument, ProcessMap, vectors);
             handler.accept(ingestDocument, null);

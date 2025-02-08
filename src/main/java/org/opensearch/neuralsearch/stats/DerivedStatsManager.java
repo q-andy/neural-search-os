@@ -4,11 +4,6 @@
  */
 package org.opensearch.neuralsearch.stats;
 
-import org.opensearch.neuralsearch.processor.ExplanationResponseProcessor;
-import org.opensearch.neuralsearch.processor.NeuralQueryEnricherProcessor;
-import org.opensearch.neuralsearch.processor.RRFProcessor;
-import org.opensearch.neuralsearch.processor.TextChunkingProcessor;
-import org.opensearch.neuralsearch.processor.combination.RRFScoreCombinationTechnique;
 import org.opensearch.neuralsearch.stats.names.DerivedStatName;
 import org.opensearch.neuralsearch.stats.names.StatType;
 import org.opensearch.neuralsearch.util.NeuralSearchClusterUtil;
@@ -24,15 +19,6 @@ public class DerivedStatsManager {
     private static final String AGG_KEY_PREFIX = "all_nodes.";
     public static final String PROCESSORS_KEY = "processors";
     public static final String ALGORITHM_KEY = "algorithm";
-
-    // Text chunking processor keys
-    public static final String ALGORITHM_FIXED_TOKEN_LENGTH_KEY = "fixed_token_length";
-    public static final String ALGORITHM_DELIMITER_KEY = "delimiter";
-    public static final String TOKENIZER_KEY = "tokenizer";
-    public static final String TOKENIZER_STANDARD = "standard";
-    public static final String TOKENIZER_LETTER = "letter";
-    public static final String TOKENIZER_LOWERCASE = "lowercase";
-    public static final String TOKENIZER_WHITESPACE = "whitespace";
 
     // Search Response
     public static final String REQUEST_PROCESSORS_KEY = "request_processors";
@@ -90,6 +76,7 @@ public class DerivedStatsManager {
     }
 
     private void addClusterVersionStat(Map<String, Object> stats) {
+        // Example cluster level info stat
         String version = NeuralSearchClusterUtil.instance().getClusterMinVersion().toString();
         stats.put(DerivedStatName.CLUSTER_VERSION.getName(), version);
     }
@@ -104,43 +91,10 @@ public class DerivedStatsManager {
                     String processorType = entry.getKey();
                     Map<String, Object> processorConfig = asMap(entry.getValue());
                     switch (processorType) {
-                        case TextChunkingProcessor.TYPE:
-                            addTextChunkingProcessorStats(stats, processorConfig);
-                            break;
-                        // Add additional ingest processor cases here
+                        // Custom processorConfig parsing to extract processor options, count processors, etc
+                        // Goes here
                     }
                 }
-            }
-        }
-    }
-
-    private void addTextChunkingProcessorStats(Map<String, Object> stats, Map<String, Object> processorConfig) {
-        increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_PROCESSOR_COUNT.getName());
-
-        Map<String, Object> algorithmField = asMap(asMap(processorConfig).get(ALGORITHM_KEY));
-        for (Map.Entry<String, Object> field : algorithmField.entrySet()) {
-            switch (field.getKey()) {
-                case ALGORITHM_DELIMITER_KEY:
-                    increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_DELIMITER.getName());
-                    break;
-                case ALGORITHM_FIXED_TOKEN_LENGTH_KEY:
-                    increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH.getName());
-                    String tokenizer = getValue(asMap(field.getValue()), TOKENIZER_KEY, String.class);
-                    switch (tokenizer) {
-                        case TOKENIZER_STANDARD:
-                            increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_STANDARD.getName());
-                            break;
-                        case TOKENIZER_LETTER:
-                            increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LETTER.getName());
-                            break;
-                        case TOKENIZER_LOWERCASE:
-                            increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LOWERCASE.getName());
-                            break;
-                        case TOKENIZER_WHITESPACE:
-                            increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_WHITESPACE.getName());
-                            break;
-                    }
-                    break;
             }
         }
     }
@@ -170,31 +124,15 @@ public class DerivedStatsManager {
     }
 
     private void countSearchRequestProcessors(Map<String, Object> stats, List<Map<String, Object>> pipelineConfig) {
-        countProcessors(
-            stats,
-            pipelineConfig,
-            NeuralQueryEnricherProcessor.TYPE,
-            DerivedStatName.SEARCH_NEURAL_QUERY_ENRICHER_PROCESSOR_COUNT
-        );
-        // Add additional processor cases here
-
+        // Count processor info using countProcessors method here
     }
 
     private void countSearchResponseProcessors(Map<String, Object> stats, List<Map<String, Object>> pipelineConfig) {
-        countProcessors(stats, pipelineConfig, ExplanationResponseProcessor.TYPE, DerivedStatName.SEARCH_EXPLANATION_PROCESSOR_COUNT);
-        // Add additional processor cases here
+        // Count processor info using countProcessors method here
     }
 
     private void countSearchPhaseResultsProcessors(Map<String, Object> stats, List<Map<String, Object>> pipelineConfig) {
-        countProcessors(stats, pipelineConfig, RRFProcessor.TYPE, DerivedStatName.SEARCH_RRF_PROCESSOR_COUNT);
-
-        countCombinationTechniques(
-            stats,
-            pipelineConfig,
-            RRFScoreCombinationTechnique.TECHNIQUE_NAME,
-            DerivedStatName.SEARCH_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT
-        );
-        // Add additional processor cases here
+        // Count processor info using countProcessors method here
     }
 
     private void countProcessors(

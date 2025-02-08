@@ -5,7 +5,6 @@
 package org.opensearch.neuralsearch.rest;
 
 import lombok.extern.log4j.Log4j2;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.opensearch.client.Response;
@@ -22,15 +21,11 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import static org.opensearch.neuralsearch.util.TestUtils.DEFAULT_COMBINATION_METHOD;
-import static org.opensearch.neuralsearch.util.TestUtils.DEFAULT_NORMALIZATION_METHOD;
 
 @Log4j2
 public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
@@ -105,157 +100,6 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
     public void tearDown() throws Exception {
         super.tearDown();
         executeClearNeuralStatRequest(Collections.emptyList());
-    }
-
-    public void test_text_chunking() throws Exception {
-        try {
-            createPipelineProcessor(FIXED_TOKEN_LENGTH_PIPELINE_WITH_STANDARD_TOKENIZER_NAME, INGEST_PIPELINE_NAME);
-            createTextChunkingIndex(INDEX_NAME, INGEST_PIPELINE_NAME);
-
-            String document = getDocumentFromFilePath(TEST_DOCUMENT);
-            ingestDocument(INDEX_NAME, document);
-
-            Response response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
-            String responseBody = EntityUtils.toString(response.getEntity());
-            Map<String, Object> clusterStats = parseStatsResponse(responseBody);
-            Map<String, Object> nodeStats = parseNodeStatsResponse(responseBody).getFirst();
-            log.info(clusterStats);
-
-            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_PROCESSOR_COUNT));
-            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_DELIMITER));
-            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH));
-            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_STANDARD));
-            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LETTER));
-            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LOWERCASE));
-            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_WHITESPACE));
-
-            assertEquals(1, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_PROCESSOR_EXECUTIONS));
-            assertEquals(0, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_ALGORITHM_DELIMITER_EXECUTIONS));
-            assertEquals(1, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH_EXECUTIONS));
-
-            createPipelineProcessor(DELIMITER_PIPELINE_NAME, INGEST_PIPELINE_NAME_2);
-            createTextChunkingIndex(INDEX_NAME_2, INGEST_PIPELINE_NAME_2);
-
-            ingestDocument(INDEX_NAME_2, document);
-            ingestDocument(INDEX_NAME_2, document);
-
-            createPipelineProcessor(FIXED_TOKEN_LENGTH_PIPELINE_WITH_LOWERCASE_TOKENIZER_NAME, INGEST_PIPELINE_NAME_3);
-
-            response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
-            responseBody = EntityUtils.toString(response.getEntity());
-            clusterStats = parseStatsResponse(responseBody);
-            nodeStats = parseNodeStatsResponse(responseBody).getFirst();
-
-            assertEquals(3, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_PROCESSOR_COUNT));
-            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_DELIMITER));
-            assertEquals(2, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH));
-            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_STANDARD));
-            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LETTER));
-            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LOWERCASE));
-            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_WHITESPACE));
-
-            assertEquals(3, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_PROCESSOR_EXECUTIONS));
-            assertEquals(2, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_ALGORITHM_DELIMITER_EXECUTIONS));
-            assertEquals(1, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH_EXECUTIONS));
-
-        } finally {
-            wipeOfTestResources(INDEX_NAME, INGEST_PIPELINE_NAME, null, null);
-            wipeOfTestResources(INDEX_NAME_2, INGEST_PIPELINE_NAME_2, null, null);
-            wipeOfTestResources(null, INGEST_PIPELINE_NAME_3, null, null);
-        }
-    }
-
-    public void test_rrf() throws Exception {
-        createDefaultRRFSearchPipeline();
-
-        Response response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
-        String responseBody = EntityUtils.toString(response.getEntity());
-        Map<String, Object> clusterStats = parseStatsResponse(responseBody);
-
-        log.info(clusterStats);
-
-        assertEquals(1, getNestedValue(clusterStats, DerivedStatName.SEARCH_RRF_PROCESSOR_COUNT.getName()));
-        assertEquals(1, getNestedValue(clusterStats, DerivedStatName.SEARCH_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT.getName()));
-
-        // Check to avoid double counts
-        response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
-        responseBody = EntityUtils.toString(response.getEntity());
-        clusterStats = parseStatsResponse(responseBody);
-
-        log.info(clusterStats);
-
-        assertEquals(1, getNestedValue(clusterStats, DerivedStatName.SEARCH_RRF_PROCESSOR_COUNT.getName()));
-        assertEquals(1, getNestedValue(clusterStats, DerivedStatName.SEARCH_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT.getName()));
-    }
-
-    public void test_explain() throws Exception {
-        createSearchPipeline(NORMALIZATION_SEARCH_PIPELINE, DEFAULT_NORMALIZATION_METHOD, DEFAULT_COMBINATION_METHOD, Map.of(), true);
-        createSearchPipeline(NORMALIZATION_SEARCH_PIPELINE + 2, DEFAULT_NORMALIZATION_METHOD, DEFAULT_COMBINATION_METHOD, Map.of(), true);
-        createSearchPipeline(NORMALIZATION_SEARCH_PIPELINE + 3, DEFAULT_NORMALIZATION_METHOD, DEFAULT_COMBINATION_METHOD, Map.of(), true);
-
-        Response response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
-        String responseBody = EntityUtils.toString(response.getEntity());
-        Map<String, Object> clusterStats = parseStatsResponse(responseBody);
-
-        log.info(clusterStats);
-
-        assertEquals(3, getNestedValue(clusterStats, DerivedStatName.SEARCH_EXPLANATION_PROCESSOR_COUNT.getName()));
-    }
-
-    public void test_textEmbedding() throws Exception {
-        String modelId = null;
-        try {
-            modelId = uploadTextEmbeddingModel();
-            loadModel(modelId);
-            createPipelineProcessor(modelId, INGEST_PIPELINE_NAME, ProcessorType.TEXT_EMBEDDING);
-            createIndexWithPipeline(INDEX_NAME, "IndexMappings.json", INGEST_PIPELINE_NAME);
-            ingestDocument(INDEX_NAME, INGEST_DOC1);
-            ingestDocument(INDEX_NAME, INGEST_DOC2);
-            ingestDocument(INDEX_NAME, INGEST_DOC3);
-            assertEquals(3, getDocCount(INDEX_NAME));
-
-            Response response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
-            String responseBody = EntityUtils.toString(response.getEntity());
-            List<Map<String, Object>> nodesStats = parseNodeStatsResponse(responseBody);
-
-            log.info(nodesStats);
-            assertEquals(3, getNestedValue(nodesStats.getFirst(), EventStatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS.getName()));
-
-        } finally {
-            wipeOfTestResources(INDEX_NAME, INGEST_PIPELINE_NAME, modelId, null);
-        }
-    }
-
-    public void test_clearNeuralStats() throws Exception {
-        String modelId = null;
-        try {
-            modelId = uploadTextEmbeddingModel();
-            loadModel(modelId);
-            createPipelineProcessor(modelId, INGEST_PIPELINE_NAME, ProcessorType.TEXT_EMBEDDING);
-            createIndexWithPipeline(INDEX_NAME, "IndexMappings.json", INGEST_PIPELINE_NAME);
-            ingestDocument(INDEX_NAME, INGEST_DOC1);
-            ingestDocument(INDEX_NAME, INGEST_DOC2);
-            assertEquals(2, getDocCount(INDEX_NAME));
-
-            Response response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
-            String responseBody = EntityUtils.toString(response.getEntity());
-            List<Map<String, Object>> nodesStats = parseNodeStatsResponse(responseBody);
-
-            log.info(nodesStats);
-            assertEquals(2, getNestedValue(nodesStats.getFirst(), EventStatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS.getName()));
-
-            executeClearNeuralStatRequest(Collections.emptyList());
-
-            response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
-            responseBody = EntityUtils.toString(response.getEntity());
-            nodesStats = parseNodeStatsResponse(responseBody);
-
-            log.info(nodesStats);
-            assertEquals(0, getNestedValue(nodesStats.getFirst(), EventStatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS.getName()));
-
-        } finally {
-            wipeOfTestResources(INDEX_NAME, INGEST_PIPELINE_NAME, modelId, null);
-        }
     }
 
     protected String uploadTextEmbeddingModel() throws Exception {

@@ -4,8 +4,6 @@
  */
 package org.opensearch.neuralsearch.stats;
 
-import org.opensearch.neuralsearch.processor.chunker.DelimiterChunker;
-import org.opensearch.neuralsearch.processor.chunker.FixedTokenLengthChunker;
 import org.opensearch.neuralsearch.stats.names.EventStatName;
 import org.opensearch.neuralsearch.stats.names.StatType;
 import org.opensearch.neuralsearch.stats.suppliers.CounterSupplier;
@@ -27,6 +25,8 @@ public class EventStatsManager {
     }
 
     private static void increment(EventStatName eventStatName) {
+        // Should write helper methods to wrap this increment call
+        // Business logic should call wrapped methods, never increment directly
         instance().getStats().computeIfAbsent(eventStatName.getName(), k -> new NeuralStat<>(new CounterSupplier())).increment();
     }
 
@@ -58,21 +58,5 @@ public class EventStatsManager {
                 eventStatsMap.computeIfAbsent(eventStatName.getName(), k -> new NeuralStat<>(new CounterSupplier()));
             }
         }
-    }
-
-    public static void recordTextChunkingExecution(String algorithm) {
-        increment(EventStatName.TEXT_CHUNKING_PROCESSOR_EXECUTIONS);
-        switch (algorithm) {
-            case DelimiterChunker.ALGORITHM_NAME:
-                increment(EventStatName.TEXT_CHUNKING_ALGORITHM_DELIMITER_EXECUTIONS);
-                break;
-            case FixedTokenLengthChunker.ALGORITHM_NAME:
-                increment(EventStatName.TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH_EXECUTIONS);
-                break;
-        }
-    }
-
-    public static void recordTextEmbeddingExecution() {
-        increment(EventStatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS);
     }
 }

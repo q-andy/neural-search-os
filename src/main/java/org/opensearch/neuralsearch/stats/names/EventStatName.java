@@ -5,7 +5,6 @@
 package org.opensearch.neuralsearch.stats.names;
 
 import lombok.Getter;
-import org.opensearch.neuralsearch.processor.ExplanationResponseProcessor;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -14,10 +13,7 @@ import java.util.Set;
 public enum EventStatName {
     // Search processor events
     // Ingest processor events
-    TEXT_EMBEDDING_PROCESSOR_EXECUTIONS("ingest_processor.text_embedding.executions", StatType.EVENT_COUNTER),
-    TEXT_CHUNKING_PROCESSOR_EXECUTIONS("ingest_processor.text_chunking.executions", StatType.EVENT_COUNTER),
-    TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH_EXECUTIONS("ingest_processor.text_chunking.algorithm.fixed_length", StatType.EVENT_COUNTER),
-    TEXT_CHUNKING_ALGORITHM_DELIMITER_EXECUTIONS("ingest_processor.text_chunking.algorithm.delimiter", StatType.EVENT_COUNTER),;
+    ;
 
     private final String name;
     private final StatType statType;

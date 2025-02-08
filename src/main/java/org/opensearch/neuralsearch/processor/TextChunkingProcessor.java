@@ -24,7 +24,6 @@ import org.opensearch.neuralsearch.processor.chunker.Chunker;
 import org.opensearch.index.mapper.IndexFieldMapper;
 import org.opensearch.neuralsearch.processor.chunker.ChunkerFactory;
 import org.opensearch.neuralsearch.processor.chunker.FixedTokenLengthChunker;
-import org.opensearch.neuralsearch.stats.EventStatsManager;
 import org.opensearch.neuralsearch.util.ProcessorDocumentUtils;
 
 import static org.opensearch.neuralsearch.processor.chunker.Chunker.MAX_CHUNK_LIMIT_FIELD;
@@ -193,7 +192,6 @@ public final class TextChunkingProcessor extends AbstractProcessor {
         runtimeParameters.put(MAX_CHUNK_LIMIT_FIELD, maxChunkLimit);
         runtimeParameters.put(CHUNK_STRING_COUNT_FIELD, chunkStringCount);
         chunkMapType(sourceAndMetadataMap, fieldMap, runtimeParameters);
-        EventStatsManager.recordTextChunkingExecution(chunker.getAlgorithmName());
         return ingestDocument;
     }
 
