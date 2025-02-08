@@ -9,7 +9,7 @@ import org.opensearch.neuralsearch.processor.NeuralQueryEnricherProcessor;
 import org.opensearch.neuralsearch.processor.RRFProcessor;
 import org.opensearch.neuralsearch.processor.TextChunkingProcessor;
 import org.opensearch.neuralsearch.processor.combination.RRFScoreCombinationTechnique;
-import org.opensearch.neuralsearch.stats.names.StatName;
+import org.opensearch.neuralsearch.stats.names.DerivedStatName;
 import org.opensearch.neuralsearch.stats.names.StatType;
 import org.opensearch.neuralsearch.util.NeuralSearchClusterUtil;
 import org.opensearch.neuralsearch.util.PipelineInfoUtil;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class DerivedStats {
+public class DerivedStatsManager {
     private static final String AGG_KEY_PREFIX = "all_nodes.";
     public static final String PROCESSORS_KEY = "processors";
     public static final String ALGORITHM_KEY = "algorithm";
@@ -42,13 +42,31 @@ public class DerivedStats {
     public static final String NORMALIZATION_KEY = "normalization";
     public static final String TECHNIQUE_KEY = "technique";
 
-    private static DerivedStats INSTANCE;
+    private static DerivedStatsManager INSTANCE;
 
-    public static DerivedStats instance() {
+    public static DerivedStatsManager instance() {
         if (INSTANCE == null) {
-            INSTANCE = new DerivedStats();
+            INSTANCE = new DerivedStatsManager();
         }
         return INSTANCE;
+    }
+
+    public Map<String, Object> getStats(List<Map<String, Long>> nodeResponses) {
+        // Reference to provide derived methods access to node Responses
+        Map<String, Long> aggregatedNodeResponses = aggregateNodesResponses(nodeResponses);
+
+        Map<String, Object> computedDerivedStats = new TreeMap<>();
+
+        // Initialize empty map with keys so stat names are visible in JSON even if not calculated
+        for (DerivedStatName stat : EnumSet.allOf(DerivedStatName.class)) {
+            if (stat.getStatType() == StatType.DERIVED_INFO_COUNTER) {
+                computedDerivedStats.put(stat.getName(), 0L);
+            }
+        }
+
+        getStats(computedDerivedStats);
+        computedDerivedStats.putAll(aggregatedNodeResponses);
+        return computedDerivedStats;
     }
 
     public Map<String, Long> aggregateNodesResponses(List<Map<String, Long>> nodeResponses) {
@@ -61,33 +79,19 @@ public class DerivedStats {
         return summedMap;
     }
 
-    public Map<String, Object> addDerivedStats(List<Map<String, Long>> nodeResponses) {
-        // Reference to provide derived methods access to node Responses
-        Map<String, Long> aggregatedNodeResponses = aggregateNodesResponses(nodeResponses);
-
-        Map<String, Object> computedDerivedStats = new TreeMap<>();
-
-        // Initialize empty map with keys so stat names are visible in JSON even if not calculated
-        for (StatName stat : EnumSet.allOf(StatName.class)) {
-            if (stat.getStatType() == StatType.INFO_DERIVED) {
-                computedDerivedStats.put(stat.getName(), 0L);
-            }
-        }
-
-        addDerivedStats(computedDerivedStats);
-        computedDerivedStats.putAll(aggregatedNodeResponses);
-        return computedDerivedStats;
-    }
-
-    private void addDerivedStats(Map<String, Object> stats) {
+    private void getStats(Map<String, Object> stats) {
         addClusterVersionStat(stats);
+
+        // Parses search pipeline processor configs for processor info
         addSearchProcessorStats(stats);
+
+        // Parses ingest pipeline processor configs for processor info
         addIngestProcessorStats(stats);
     }
 
     private void addClusterVersionStat(Map<String, Object> stats) {
         String version = NeuralSearchClusterUtil.instance().getClusterMinVersion().toString();
-        stats.put(StatName.CLUSTER_VERSION.getName(), version);
+        stats.put(DerivedStatName.CLUSTER_VERSION.getName(), version);
     }
 
     private void addIngestProcessorStats(Map<String, Object> stats) {
@@ -103,6 +107,7 @@ public class DerivedStats {
                         case TextChunkingProcessor.TYPE:
                             addTextChunkingProcessorStats(stats, processorConfig);
                             break;
+                        // Add additional ingest processor cases here
                     }
                 }
             }
@@ -110,29 +115,29 @@ public class DerivedStats {
     }
 
     private void addTextChunkingProcessorStats(Map<String, Object> stats, Map<String, Object> processorConfig) {
-        increment(stats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_PROCESSOR_COUNT.getName());
+        increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_PROCESSOR_COUNT.getName());
 
         Map<String, Object> algorithmField = asMap(asMap(processorConfig).get(ALGORITHM_KEY));
         for (Map.Entry<String, Object> field : algorithmField.entrySet()) {
             switch (field.getKey()) {
                 case ALGORITHM_DELIMITER_KEY:
-                    increment(stats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_ALGORITHM_DELIMITER.getName());
+                    increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_DELIMITER.getName());
                     break;
                 case ALGORITHM_FIXED_TOKEN_LENGTH_KEY:
-                    increment(stats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH.getName());
+                    increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH.getName());
                     String tokenizer = getValue(asMap(field.getValue()), TOKENIZER_KEY, String.class);
                     switch (tokenizer) {
                         case TOKENIZER_STANDARD:
-                            increment(stats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_STANDARD.getName());
+                            increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_STANDARD.getName());
                             break;
                         case TOKENIZER_LETTER:
-                            increment(stats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_LETTER.getName());
+                            increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LETTER.getName());
                             break;
                         case TOKENIZER_LOWERCASE:
-                            increment(stats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_LOWERCASE.getName());
+                            increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LOWERCASE.getName());
                             break;
                         case TOKENIZER_WHITESPACE:
-                            increment(stats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_WHITESPACE.getName());
+                            increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_WHITESPACE.getName());
                             break;
                     }
                     break;
@@ -169,36 +174,47 @@ public class DerivedStats {
             stats,
             pipelineConfig,
             NeuralQueryEnricherProcessor.TYPE,
-            StatName.SEARCH_PIPELINE_NEURAL_QUERY_ENRICHER_PROCESSOR_COUNT
+            DerivedStatName.SEARCH_NEURAL_QUERY_ENRICHER_PROCESSOR_COUNT
         );
+        // Add additional processor cases here
+
     }
 
     private void countSearchResponseProcessors(Map<String, Object> stats, List<Map<String, Object>> pipelineConfig) {
-        countProcessors(stats, pipelineConfig, ExplanationResponseProcessor.TYPE, StatName.SEARCH_PIPELINE_EXPLANATION_PROCESSOR_COUNT);
+        countProcessors(stats, pipelineConfig, ExplanationResponseProcessor.TYPE, DerivedStatName.SEARCH_EXPLANATION_PROCESSOR_COUNT);
+        // Add additional processor cases here
     }
 
     private void countSearchPhaseResultsProcessors(Map<String, Object> stats, List<Map<String, Object>> pipelineConfig) {
-        countProcessors(stats, pipelineConfig, RRFProcessor.TYPE, StatName.SEARCH_PIPELINE_RRF_PROCESSOR_COUNT);
+        countProcessors(stats, pipelineConfig, RRFProcessor.TYPE, DerivedStatName.SEARCH_RRF_PROCESSOR_COUNT);
 
         countCombinationTechniques(
             stats,
             pipelineConfig,
             RRFScoreCombinationTechnique.TECHNIQUE_NAME,
-            StatName.SEARCH_PIPELINE_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT
+            DerivedStatName.SEARCH_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT
         );
+        // Add additional processor cases here
     }
 
-    private void countProcessors(Map<String, Object> stats, List<Map<String, Object>> processors, String processorType, StatName statName) {
+    private void countProcessors(
+        Map<String, Object> stats,
+        List<Map<String, Object>> processors,
+        String processorType,
+        DerivedStatName derivedStatName
+    ) {
         long count = processors.stream().filter(p -> p.containsKey(processorType)).count();
-        incrementBy(stats, statName.getName(), count);
+        incrementBy(stats, derivedStatName.getName(), count);
+        // Add additional processor cases here
     }
 
     private void countCombinationTechniques(
         Map<String, Object> stats,
         List<Map<String, Object>> processors,
         String combinationTechnique,
-        StatName statName
+        DerivedStatName derivedStatName
     ) {
+        // Parses to access combination technique field
         for (Map<String, Object> processorObj : processors) {
             Map<String, Object> processor = asMap(processorObj);
             for (Object processorConfigObj : processor.values()) {
@@ -206,7 +222,7 @@ public class DerivedStats {
                 Map<String, Object> combination = asMap(config.get(COMBINATION_KEY));
                 String technique = getValue(combination, TECHNIQUE_KEY, String.class);
                 if (technique != null && technique.equals(combinationTechnique)) {
-                    increment(stats, statName.getName());
+                    increment(stats, derivedStatName.getName());
                 }
             }
         }

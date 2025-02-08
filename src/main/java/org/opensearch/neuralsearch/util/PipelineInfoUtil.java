@@ -50,8 +50,6 @@ public class PipelineInfoUtil {
             .map(PipelineConfiguration::getConfigAsMap)
             .collect(Collectors.toList());
 
-        System.out.println("pasta_search_pipeline_configs");
-        System.out.println(pipelineConfigs);
         return pipelineConfigs;
     }
 
@@ -61,8 +59,6 @@ public class PipelineInfoUtil {
             .map(org.opensearch.ingest.PipelineConfiguration::getConfigAsMap)
             .collect(Collectors.toList());
 
-        System.out.println("pasta_ingest_pipeline_configs");
-        System.out.println(pipelineConfigs);
         return pipelineConfigs;
     }
 }

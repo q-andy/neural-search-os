@@ -5,7 +5,6 @@
 package org.opensearch.neuralsearch.stats.names;
 
 public enum StatType {
-    INFO_DERIVED,
-    STAT_DERIVED,
-    COUNTER_EVENT;
+    DERIVED_INFO_COUNTER,
+    EVENT_COUNTER;
 }

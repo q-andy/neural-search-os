@@ -64,7 +64,8 @@ import org.opensearch.neuralsearch.query.NeuralSparseQueryBuilder;
 import org.opensearch.neuralsearch.query.ext.RerankSearchExtBuilder;
 import org.opensearch.neuralsearch.rest.RestNeuralStatsHandler;
 import org.opensearch.neuralsearch.search.query.HybridQueryPhaseSearcher;
-import org.opensearch.neuralsearch.stats.NeuralStats;
+import org.opensearch.neuralsearch.stats.DerivedStatsManager;
+import org.opensearch.neuralsearch.stats.EventStatsManager;
 import org.opensearch.neuralsearch.transport.ClearNeuralStatsAction;
 import org.opensearch.neuralsearch.transport.ClearNeuralStatsTransportAction;
 import org.opensearch.neuralsearch.transport.NeuralStatsAction;
@@ -122,10 +123,11 @@ public class NeuralSearch extends Plugin implements ActionPlugin, SearchPlugin, 
         NeuralSparseQueryBuilder.initialize(clientAccessor);
         HybridQueryExecutor.initialize(threadPool);
         normalizationProcessorWorkflow = new NormalizationProcessorWorkflow(new ScoreNormalizer(), new ScoreCombiner());
-        NeuralStats neuralStats = NeuralStats.instance();
+        EventStatsManager eventStatsManager = EventStatsManager.instance();
+        DerivedStatsManager derivedStatsManager = DerivedStatsManager.instance();
         PipelineInfoUtil.instance().initialize(clusterService);
 
-        return List.of(clientAccessor, neuralStats);
+        return List.of(clientAccessor, eventStatsManager, derivedStatsManager);
 
     }
 
