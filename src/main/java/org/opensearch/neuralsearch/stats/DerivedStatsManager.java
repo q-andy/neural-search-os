@@ -4,6 +4,7 @@
  */
 package org.opensearch.neuralsearch.stats;
 
+import org.opensearch.neuralsearch.processor.TextChunkingProcessor;
 import org.opensearch.neuralsearch.stats.names.DerivedStatName;
 import org.opensearch.neuralsearch.stats.names.StatType;
 import org.opensearch.neuralsearch.util.NeuralSearchClusterUtil;
@@ -19,6 +20,15 @@ public class DerivedStatsManager {
     private static final String AGG_KEY_PREFIX = "all_nodes.";
     public static final String PROCESSORS_KEY = "processors";
     public static final String ALGORITHM_KEY = "algorithm";
+
+    // Text chunking processor keys
+    public static final String ALGORITHM_FIXED_TOKEN_LENGTH_KEY = "fixed_token_length";
+    public static final String ALGORITHM_DELIMITER_KEY = "delimiter";
+    public static final String TOKENIZER_KEY = "tokenizer";
+    public static final String TOKENIZER_STANDARD = "standard";
+    public static final String TOKENIZER_LETTER = "letter";
+    public static final String TOKENIZER_LOWERCASE = "lowercase";
+    public static final String TOKENIZER_WHITESPACE = "whitespace";
 
     // Search Response
     public static final String REQUEST_PROCESSORS_KEY = "request_processors";
@@ -91,10 +101,43 @@ public class DerivedStatsManager {
                     String processorType = entry.getKey();
                     Map<String, Object> processorConfig = asMap(entry.getValue());
                     switch (processorType) {
-                        // Custom processorConfig parsing to extract processor options, count processors, etc
-                        // Goes here
+                        case TextChunkingProcessor.TYPE:
+                            addTextChunkingProcessorStats(stats, processorConfig);
+                            break;
+                        // Add additional ingest processor cases here
                     }
                 }
+            }
+        }
+    }
+
+    private void addTextChunkingProcessorStats(Map<String, Object> stats, Map<String, Object> processorConfig) {
+        increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_PROCESSOR_COUNT.getName());
+
+        Map<String, Object> algorithmField = asMap(asMap(processorConfig).get(ALGORITHM_KEY));
+        for (Map.Entry<String, Object> field : algorithmField.entrySet()) {
+            switch (field.getKey()) {
+                case ALGORITHM_DELIMITER_KEY:
+                    increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_DELIMITER.getName());
+                    break;
+                case ALGORITHM_FIXED_TOKEN_LENGTH_KEY:
+                    increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH.getName());
+                    String tokenizer = getValue(asMap(field.getValue()), TOKENIZER_KEY, String.class);
+                    switch (tokenizer) {
+                        case TOKENIZER_STANDARD:
+                            increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_STANDARD.getName());
+                            break;
+                        case TOKENIZER_LETTER:
+                            increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LETTER.getName());
+                            break;
+                        case TOKENIZER_LOWERCASE:
+                            increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LOWERCASE.getName());
+                            break;
+                        case TOKENIZER_WHITESPACE:
+                            increment(stats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_WHITESPACE.getName());
+                            break;
+                    }
+                    break;
             }
         }
     }

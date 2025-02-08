@@ -5,6 +5,7 @@
 package org.opensearch.neuralsearch.rest;
 
 import lombok.extern.log4j.Log4j2;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.opensearch.client.Response;
@@ -21,6 +22,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -100,6 +102,64 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
     public void tearDown() throws Exception {
         super.tearDown();
         executeClearNeuralStatRequest(Collections.emptyList());
+    }
+
+    public void test_text_chunking() throws Exception {
+        try {
+            createPipelineProcessor(FIXED_TOKEN_LENGTH_PIPELINE_WITH_STANDARD_TOKENIZER_NAME, INGEST_PIPELINE_NAME);
+            createTextChunkingIndex(INDEX_NAME, INGEST_PIPELINE_NAME);
+
+            String document = getDocumentFromFilePath(TEST_DOCUMENT);
+            ingestDocument(INDEX_NAME, document);
+
+            Response response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
+            String responseBody = EntityUtils.toString(response.getEntity());
+            Map<String, Object> clusterStats = parseStatsResponse(responseBody);
+            Map<String, Object> nodeStats = parseNodeStatsResponse(responseBody).getFirst();
+            log.info(clusterStats);
+
+            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_PROCESSOR_COUNT));
+            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_DELIMITER));
+            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH));
+            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_STANDARD));
+            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LETTER));
+            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LOWERCASE));
+            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_WHITESPACE));
+
+            assertEquals(1, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_PROCESSOR_EXECUTIONS));
+            assertEquals(0, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_ALGORITHM_DELIMITER_EXECUTIONS));
+            assertEquals(1, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH_EXECUTIONS));
+
+            createPipelineProcessor(DELIMITER_PIPELINE_NAME, INGEST_PIPELINE_NAME_2);
+            createTextChunkingIndex(INDEX_NAME_2, INGEST_PIPELINE_NAME_2);
+
+            ingestDocument(INDEX_NAME_2, document);
+            ingestDocument(INDEX_NAME_2, document);
+
+            createPipelineProcessor(FIXED_TOKEN_LENGTH_PIPELINE_WITH_LOWERCASE_TOKENIZER_NAME, INGEST_PIPELINE_NAME_3);
+
+            response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
+            responseBody = EntityUtils.toString(response.getEntity());
+            clusterStats = parseStatsResponse(responseBody);
+            nodeStats = parseNodeStatsResponse(responseBody).getFirst();
+
+            assertEquals(3, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_PROCESSOR_COUNT));
+            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_DELIMITER));
+            assertEquals(2, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH));
+            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_STANDARD));
+            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LETTER));
+            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LOWERCASE));
+            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_WHITESPACE));
+
+            assertEquals(3, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_PROCESSOR_EXECUTIONS));
+            assertEquals(2, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_ALGORITHM_DELIMITER_EXECUTIONS));
+            assertEquals(1, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH_EXECUTIONS));
+
+        } finally {
+            wipeOfTestResources(INDEX_NAME, INGEST_PIPELINE_NAME, null, null);
+            wipeOfTestResources(INDEX_NAME_2, INGEST_PIPELINE_NAME_2, null, null);
+            wipeOfTestResources(null, INGEST_PIPELINE_NAME_3, null, null);
+        }
     }
 
     protected String uploadTextEmbeddingModel() throws Exception {
