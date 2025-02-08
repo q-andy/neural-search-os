@@ -14,7 +14,8 @@ import org.opensearch.core.rest.RestStatus;
 import org.opensearch.core.xcontent.MediaTypeRegistry;
 import org.opensearch.neuralsearch.BaseNeuralSearchIT;
 import org.opensearch.neuralsearch.plugin.NeuralSearch;
-import org.opensearch.neuralsearch.stats.names.StatName;
+import org.opensearch.neuralsearch.stats.names.DerivedStatName;
+import org.opensearch.neuralsearch.stats.names.EventStatName;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -120,17 +121,17 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
             Map<String, Object> nodeStats = parseNodeStatsResponse(responseBody).getFirst();
             log.info(clusterStats);
 
-            assertEquals(1, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_PROCESSOR_COUNT));
-            assertEquals(0, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_ALGORITHM_DELIMITER));
-            assertEquals(1, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH));
-            assertEquals(1, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_STANDARD));
-            assertEquals(0, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_LETTER));
-            assertEquals(0, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_LOWERCASE));
-            assertEquals(0, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_WHITESPACE));
+            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_PROCESSOR_COUNT));
+            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_DELIMITER));
+            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH));
+            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_STANDARD));
+            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LETTER));
+            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LOWERCASE));
+            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_WHITESPACE));
 
-            assertEquals(1, getNestedValue(nodeStats, StatName.TEXT_CHUNKING_PROCESSOR_EXECUTIONS));
-            assertEquals(0, getNestedValue(nodeStats, StatName.TEXT_CHUNKING_ALGORITHM_DELIMITER_EXECUTIONS));
-            assertEquals(1, getNestedValue(nodeStats, StatName.TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH_EXECUTIONS));
+            assertEquals(1, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_PROCESSOR_EXECUTIONS));
+            assertEquals(0, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_ALGORITHM_DELIMITER_EXECUTIONS));
+            assertEquals(1, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH_EXECUTIONS));
 
             createPipelineProcessor(DELIMITER_PIPELINE_NAME, INGEST_PIPELINE_NAME_2);
             createTextChunkingIndex(INDEX_NAME_2, INGEST_PIPELINE_NAME_2);
@@ -145,17 +146,17 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
             clusterStats = parseStatsResponse(responseBody);
             nodeStats = parseNodeStatsResponse(responseBody).getFirst();
 
-            assertEquals(3, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_PROCESSOR_COUNT));
-            assertEquals(1, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_ALGORITHM_DELIMITER));
-            assertEquals(2, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH));
-            assertEquals(1, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_STANDARD));
-            assertEquals(0, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_LETTER));
-            assertEquals(1, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_LOWERCASE));
-            assertEquals(0, getNestedValue(clusterStats, StatName.INGEST_PIPELINE_TEXT_CHUNKING_TOKENIZER_WHITESPACE));
+            assertEquals(3, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_PROCESSOR_COUNT));
+            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_DELIMITER));
+            assertEquals(2, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH));
+            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_STANDARD));
+            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LETTER));
+            assertEquals(1, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_LOWERCASE));
+            assertEquals(0, getNestedValue(clusterStats, DerivedStatName.INGEST_TEXT_CHUNKING_TOKENIZER_WHITESPACE));
 
-            assertEquals(3, getNestedValue(nodeStats, StatName.TEXT_CHUNKING_PROCESSOR_EXECUTIONS));
-            assertEquals(2, getNestedValue(nodeStats, StatName.TEXT_CHUNKING_ALGORITHM_DELIMITER_EXECUTIONS));
-            assertEquals(1, getNestedValue(nodeStats, StatName.TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH_EXECUTIONS));
+            assertEquals(3, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_PROCESSOR_EXECUTIONS));
+            assertEquals(2, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_ALGORITHM_DELIMITER_EXECUTIONS));
+            assertEquals(1, getNestedValue(nodeStats, EventStatName.TEXT_CHUNKING_ALGORITHM_FIXED_LENGTH_EXECUTIONS));
 
         } finally {
             wipeOfTestResources(INDEX_NAME, INGEST_PIPELINE_NAME, null, null);
@@ -173,8 +174,8 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
 
         log.info(clusterStats);
 
-        assertEquals(1, getNestedValue(clusterStats, StatName.SEARCH_PIPELINE_RRF_PROCESSOR_COUNT.getName()));
-        assertEquals(1, getNestedValue(clusterStats, StatName.SEARCH_PIPELINE_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT.getName()));
+        assertEquals(1, getNestedValue(clusterStats, DerivedStatName.SEARCH_RRF_PROCESSOR_COUNT.getName()));
+        assertEquals(1, getNestedValue(clusterStats, DerivedStatName.SEARCH_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT.getName()));
 
         // Check to avoid double counts
         response = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>());
@@ -183,8 +184,8 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
 
         log.info(clusterStats);
 
-        assertEquals(1, getNestedValue(clusterStats, StatName.SEARCH_PIPELINE_RRF_PROCESSOR_COUNT.getName()));
-        assertEquals(1, getNestedValue(clusterStats, StatName.SEARCH_PIPELINE_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT.getName()));
+        assertEquals(1, getNestedValue(clusterStats, DerivedStatName.SEARCH_RRF_PROCESSOR_COUNT.getName()));
+        assertEquals(1, getNestedValue(clusterStats, DerivedStatName.SEARCH_NORMALIZATION_COMBINATION_TECHNIQUE_RRF_COUNT.getName()));
     }
 
     public void test_explain() throws Exception {
@@ -198,10 +199,10 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
 
         log.info(clusterStats);
 
-        assertEquals(3, getNestedValue(clusterStats, StatName.SEARCH_PIPELINE_EXPLANATION_PROCESSOR_COUNT.getName()));
+        assertEquals(3, getNestedValue(clusterStats, DerivedStatName.SEARCH_EXPLANATION_PROCESSOR_COUNT.getName()));
     }
 
-    public void test_happyCase_textEmbedding() throws Exception {
+    public void test_textEmbedding() throws Exception {
         String modelId = null;
         try {
             modelId = uploadTextEmbeddingModel();
@@ -218,7 +219,7 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
             List<Map<String, Object>> nodesStats = parseNodeStatsResponse(responseBody);
 
             log.info(nodesStats);
-            assertEquals(3, getNestedValue(nodesStats.getFirst(), StatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS.getName()));
+            assertEquals(3, getNestedValue(nodesStats.getFirst(), EventStatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS.getName()));
 
         } finally {
             wipeOfTestResources(INDEX_NAME, INGEST_PIPELINE_NAME, modelId, null);
@@ -241,7 +242,7 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
             List<Map<String, Object>> nodesStats = parseNodeStatsResponse(responseBody);
 
             log.info(nodesStats);
-            assertEquals(2, getNestedValue(nodesStats.getFirst(), StatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS.getName()));
+            assertEquals(2, getNestedValue(nodesStats.getFirst(), EventStatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS.getName()));
 
             executeClearNeuralStatRequest(Collections.emptyList());
 
@@ -250,7 +251,7 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
             nodesStats = parseNodeStatsResponse(responseBody);
 
             log.info(nodesStats);
-            assertEquals(0, getNestedValue(nodesStats.getFirst(), StatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS.getName()));
+            assertEquals(0, getNestedValue(nodesStats.getFirst(), EventStatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS.getName()));
 
         } finally {
             wipeOfTestResources(INDEX_NAME, INGEST_PIPELINE_NAME, modelId, null);
@@ -319,8 +320,12 @@ public class RestNeuralStatsHandlerIT extends BaseNeuralSearchIT {
         return getNestedValueHelper(map, keys, 0);
     }
 
-    public Object getNestedValue(Map<String, Object> map, StatName statName) {
-        return getNestedValue(map, statName.getName());
+    public Object getNestedValue(Map<String, Object> map, EventStatName eventStatName) {
+        return getNestedValue(map, eventStatName.getName());
+    }
+
+    public Object getNestedValue(Map<String, Object> map, DerivedStatName derivedStatName) {
+        return getNestedValue(map, derivedStatName.getName());
     }
 
     private Object getNestedValueHelper(Map<String, Object> map, String[] keys, int depth) {

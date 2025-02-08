@@ -10,8 +10,8 @@ import org.opensearch.action.support.nodes.TransportNodesAction;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.inject.Inject;
 import org.opensearch.core.common.io.stream.StreamInput;
-import org.opensearch.neuralsearch.stats.DerivedStats;
-import org.opensearch.neuralsearch.stats.NeuralStats;
+import org.opensearch.neuralsearch.stats.DerivedStatsManager;
+import org.opensearch.neuralsearch.stats.EventStatsManager;
 import org.opensearch.transport.TransportService;
 import org.opensearch.threadpool.ThreadPool;
 
@@ -29,7 +29,8 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
     NeuralStatsNodeRequest,
     NeuralStatsNodeResponse> {
 
-    private NeuralStats neuralStats;
+    private EventStatsManager eventStatsManager;
+    private DerivedStatsManager derivedStatsManager;
 
     /**
      * Constructor
@@ -38,7 +39,8 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
      * @param clusterService ClusterService
      * @param transportService TransportService
      * @param actionFilters Action Filters
-     * @param neuralStats NeuralStats object
+     * @param eventStatsManager NeuralStats object
+     * @param eventStatsManager Derived stats object
      */
     @Inject
     public NeuralStatsTransportAction(
@@ -46,7 +48,8 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
         ClusterService clusterService,
         TransportService transportService,
         ActionFilters actionFilters,
-        NeuralStats neuralStats
+        EventStatsManager eventStatsManager,
+        DerivedStatsManager derivedStatsManager
     ) {
         super(
             NeuralStatsAction.NAME,
@@ -59,7 +62,8 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
             ThreadPool.Names.MANAGEMENT,
             NeuralStatsNodeResponse.class
         );
-        this.neuralStats = neuralStats;
+        this.eventStatsManager = eventStatsManager;
+        this.derivedStatsManager = derivedStatsManager;
     }
 
     @Override
@@ -68,17 +72,9 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
         List<NeuralStatsNodeResponse> responses,
         List<FailedNodeException> failures
     ) {
-
-        Map<String, Object> clusterStats = new HashMap<>();
-
-        // for (String statName : neuralStats.getStats().keySet()) {
-        // clusterStats.put(statName, neuralStats.getStats().get(statName).getValue());
-        // }'
-        DerivedStats derivedStats = DerivedStats.instance();
-        clusterStats.putAll(derivedStats.addDerivedStats(responses.stream().map(NeuralStatsNodeResponse::getStatsMap).toList()));
-
-        System.out.println(clusterStats);
-
+        Map<String, Object> clusterStats = new HashMap<>(
+            derivedStatsManager.getStats(responses.stream().map(NeuralStatsNodeResponse::getStatsMap).toList())
+        );
         return new NeuralStatsResponse(clusterService.getClusterName(), responses, failures, clusterStats);
     }
 
@@ -97,11 +93,9 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
         // Reads from NeuralStats to node level stats on an individual node
         Map<String, Long> statValues = new HashMap<>();
 
-        for (String statName : neuralStats.getStats().keySet()) {
-            statValues.put(statName, neuralStats.getStats().get(statName).getValue());
+        for (String statName : eventStatsManager.getStats().keySet()) {
+            statValues.put(statName, eventStatsManager.getStats().get(statName).getValue());
         }
-        System.out.println("Transport_Action node operation for (ta_node_pasta)" + clusterService.localNode());
-        System.out.println(statValues);
         return new NeuralStatsNodeResponse(clusterService.localNode(), statValues);
     }
 }

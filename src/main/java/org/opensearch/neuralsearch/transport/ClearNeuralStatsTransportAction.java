@@ -10,7 +10,7 @@ import org.opensearch.action.support.nodes.TransportNodesAction;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.inject.Inject;
 import org.opensearch.core.common.io.stream.StreamInput;
-import org.opensearch.neuralsearch.stats.NeuralStats;
+import org.opensearch.neuralsearch.stats.EventStatsManager;
 import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.transport.TransportService;
 
@@ -25,7 +25,7 @@ public class ClearNeuralStatsTransportAction extends TransportNodesAction<
     ClearNeuralStatsResponse,
     ClearNeuralStatsNodeRequest,
     ClearNeuralStatsNodeResponse> {
-    private final NeuralStats neuralStats;
+    private final EventStatsManager eventStatsManager;
 
     /**
      * Constructor
@@ -41,7 +41,7 @@ public class ClearNeuralStatsTransportAction extends TransportNodesAction<
         ClusterService clusterService,
         TransportService transportService,
         ActionFilters actionFilters,
-        NeuralStats neuralStats
+        EventStatsManager eventStatsManager
     ) {
         super(
             ClearNeuralStatsAction.NAME,
@@ -54,7 +54,7 @@ public class ClearNeuralStatsTransportAction extends TransportNodesAction<
             ThreadPool.Names.MANAGEMENT,
             ClearNeuralStatsNodeResponse.class
         );
-        this.neuralStats = neuralStats;
+        this.eventStatsManager = eventStatsManager;
     }
 
     @Override
@@ -78,7 +78,7 @@ public class ClearNeuralStatsTransportAction extends TransportNodesAction<
 
     @Override
     protected ClearNeuralStatsNodeResponse nodeOperation(ClearNeuralStatsNodeRequest request) {
-        neuralStats.resetStats();
+        eventStatsManager.resetStats();
         return new ClearNeuralStatsNodeResponse(clusterService.localNode());
     }
 }

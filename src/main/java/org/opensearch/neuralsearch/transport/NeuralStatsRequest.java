@@ -21,7 +21,6 @@ public class NeuralStatsRequest extends BaseNodesRequest<NeuralStatsRequest> {
     /**
      * Key indicating all stats should be retrieved
      */
-    public static final String ALL_STATS_KEY = "_all";
     @Getter
     private final NeuralStatsInput neuralStatsInput;
 
