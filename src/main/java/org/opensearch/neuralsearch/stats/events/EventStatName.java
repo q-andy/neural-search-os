@@ -18,7 +18,27 @@ import java.util.stream.Collectors;
  */
 @Getter
 public enum EventStatName implements StatName {
-    TEXT_EMBEDDING_PROCESSOR_EXECUTIONS("text_embedding_executions", "processors.ingest", EventStatType.TIMESTAMPED_EVENT_COUNTER);
+    TEXT_EMBEDDING_PROCESSOR_EXECUTIONS("text_embedding_executions", "processors.ingest", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_2("performance_2", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_3("performance_3", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_4("performance_4", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_5("performance_5", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_6("performance_6", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_7("performance_7", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_8("performance_8", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_9("performance_9", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_10("performance_10", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_11("performance_11", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_12("performance_12", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_13("performance_13", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_14("performance_14", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_15("performance_15", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_16("performance_16", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_17("performance_17", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_18("performance_18", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_19("performance_19", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_20("performance_20", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    PERFORMANCE_STAT_21("performance_21", "test.performance", EventStatType.TIMESTAMPED_EVENT_COUNTER);
 
     private final String nameString;
     private final String path;

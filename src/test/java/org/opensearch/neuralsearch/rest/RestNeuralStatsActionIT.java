@@ -8,7 +8,6 @@ import lombok.extern.log4j.Log4j2;
 import org.junit.After;
 import org.junit.Before;
 import org.opensearch.client.Request;
-import org.opensearch.client.Response;
 import org.opensearch.client.ResponseException;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.neuralsearch.BaseNeuralSearchIT;
