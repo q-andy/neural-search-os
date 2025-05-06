@@ -4,6 +4,11 @@
  */
 package org.opensearch.neuralsearch.stats.info;
 
+<<<<<<< Updated upstream
+=======
+import org.opensearch.neuralsearch.processor.NormalizationProcessor;
+import org.opensearch.neuralsearch.processor.TextChunkingProcessor;
+>>>>>>> Stashed changes
 import org.opensearch.neuralsearch.processor.TextEmbeddingProcessor;
 import org.opensearch.neuralsearch.settings.NeuralSearchSettingsAccessor;
 import org.opensearch.neuralsearch.stats.common.StatSnapshot;
@@ -135,6 +140,88 @@ public class InfoStatsManager {
     }
 
     /**
+<<<<<<< Updated upstream
+=======
+     * Counts text chunking processor stats based on processor config
+     * @param stats
+     * @param processorConfig
+     */
+    private void countTextChunkingProcessorStats(Map<InfoStatName, CountableInfoStatSnapshot> stats, Map<String, Object> processorConfig) {
+        increment(stats, InfoStatName.TEXT_CHUNKING_PROCESSORS);
+
+        Map<String, Object> algorithmMap = asMap(processorConfig.get(TextChunkingProcessor.ALGORITHM_FIELD));
+
+        Map.Entry<String, Object> algorithmEntry = algorithmMap.entrySet().iterator().next();
+        String algorithmKey = algorithmEntry.getKey();
+
+        switch (algorithmKey) {
+            case DelimiterChunker.ALGORITHM_NAME -> increment(stats, InfoStatName.TEXT_CHUNKING_DELIMITER_PROCESSORS);
+            case FixedTokenLengthChunker.ALGORITHM_NAME -> increment(stats, InfoStatName.TEXT_CHUNKING_FIXED_LENGTH_PROCESSORS);
+        }
+    }
+
+    /**
+     * Adds search processor info stats, mutating the input
+     * @param stats mutable map of info stats that the result will be added to
+     */
+    private void addSearchProcessorStats(Map<InfoStatName, CountableInfoStatSnapshot> stats) {
+        List<Map<String, Object>> pipelineConfigs = pipelineServiceUtil.getSearchPipelineConfigs();
+
+        // Iterate through all ingest processors and count their stats individually by calling helpers
+        for (Map<String, Object> pipelineConfig : pipelineConfigs) {
+            List<Map<String, Object>> ingestProcessors = asListOfMaps(pipelineConfig.get(PROCESSORS_KEY));
+            for (Map<String, Object> ingestProcessor : ingestProcessors) {
+                for (Map.Entry<String, Object> entry : ingestProcessor.entrySet()) {
+                    String processorType = entry.getKey();
+                    Map<String, Object> processorConfig = asMap(entry.getValue());
+                    switch (processorType) {
+                        case NormalizationProcessor.TYPE:
+                            countNormalizationProcessorStats(stats, processorConfig);
+                            break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void countNormalizationProcessorStats(Map<InfoStatName, CountableInfoStatSnapshot> stats, Map<String, Object> processorConfig) {
+        increment(stats, InfoStatName.NORMALIZATION_PROCESSORS);
+
+        Map<String, Object> normalizationTechnique = asMap(processorConfig.get(TextChunkingProcessor.ALGORITHM_FIELD));
+        Map<String, Object> combinationTechnique = asMap(processorConfig.get(TextChunkingProcessor.ALGORITHM_FIELD));
+
+        // Map.Entry<String, Object> algorithmEntry = algorithmMap.entrySet().iterator().next();
+        // String algorithmKey = algorithmEntry.getKey();
+        //
+        // switch (normalizationTechnique.techniqueName()) {
+        // case L2ScoreNormalizationTechnique.TECHNIQUE_NAME -> EventStatsManager.increment(EventStatName.NORM_TECHNIQUE_L2_EXECUTIONS);
+        // case MinMaxScoreNormalizationTechnique.TECHNIQUE_NAME -> EventStatsManager.increment(
+        // EventStatName.NORM_TECHNIQUE_MINMAX_EXECUTIONS
+        // );
+        // case ZScoreNormalizationTechnique.TECHNIQUE_NAME -> EventStatsManager.increment(
+        // EventStatName.NORM_TECHNIQUE_NORM_ZSCORE_EXECUTIONS
+        // );
+        // case RRFNormalizationTechnique.TECHNIQUE_NAME -> EventStatsManager.increment(EventStatName.NORM_TECHNIQUE_RRF_EXECUTIONS);
+        // }
+        //
+        // switch (combinationTechnique.techniqueName()) {
+        // case ArithmeticMeanScoreCombinationTechnique.TECHNIQUE_NAME -> EventStatsManager.increment(
+        // EventStatName.COMBINATION_TECHNIQUE_ARITHMETIC_EXECUTIONS
+        // );
+        // case GeometricMeanScoreCombinationTechnique.TECHNIQUE_NAME -> EventStatsManager.increment(
+        // EventStatName.COMBINATION_TECHNIQUE_GEOMETRIC_EXECUTIONS
+        // );
+        // case HarmonicMeanScoreCombinationTechnique.TECHNIQUE_NAME -> EventStatsManager.increment(
+        // EventStatName.COMBINATION_TECHNIQUE_HARMONIC_EXECUTIONS
+        // );
+        // case RRFScoreCombinationTechnique.TECHNIQUE_NAME -> EventStatsManager.increment(
+        // EventStatName.COMBINATION_TECHNIQUE_RRF_EXECUTIONS
+        // );
+        // }
+    }
+
+    /**
+>>>>>>> Stashed changes
      * Increments a countable info stat in the given stat name
      * @param stats map containing the stat to increment
      * @param infoStatName the identifier for the stat to increment

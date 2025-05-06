@@ -20,7 +20,35 @@ import java.util.stream.Collectors;
 public enum InfoStatName implements StatName {
     // Cluster info
     CLUSTER_VERSION("cluster_version", "", InfoStatType.INFO_STRING),
+<<<<<<< Updated upstream
     TEXT_EMBEDDING_PROCESSORS("text_embedding_processors_in_pipelines", "processors.ingest", InfoStatType.INFO_COUNTER);
+=======
+    TEXT_EMBEDDING_PROCESSORS("text_embedding_processors_in_pipelines", "processors.ingest", InfoStatType.INFO_COUNTER),
+    TEXT_CHUNKING_PROCESSORS("text_chunking_processors", "processors.ingest", InfoStatType.INFO_COUNTER),
+    TEXT_CHUNKING_DELIMITER_PROCESSORS("text_chunking_delimiter_processors", "processors.ingest", InfoStatType.INFO_COUNTER),
+    TEXT_CHUNKING_FIXED_LENGTH_PROCESSORS("text_chunking_fixed_length_processors", "processors.ingest", InfoStatType.INFO_COUNTER),
+    NORMALIZATION_PROCESSORS("normalization_processors", "processors.search", InfoStatType.INFO_COUNTER),
+    NORMALIZATION_PROCESSORS_NORM_TECHNIQUE_L2_EXECUTIONS("normalization_technique_l2", "processors.search", InfoStatType.INFO_COUNTER),
+    NORMALIZATION_PROCESSORS_NORM_TECHNIQUE_MINMAX("normalization_technique_minmax", "processors.search", InfoStatType.INFO_COUNTER),
+    NORMALIZATION_PROCESSORS_NORM_TECHNIQUE_ZSCORE("normalization_technique_zscore", "processors.search", InfoStatType.INFO_COUNTER),
+    NORMALIZATION_PROCESSORS_NORM_TECHNIQUE_RRF("normalization_technique_rrf", "processors.search", InfoStatType.INFO_COUNTER),
+    NORMALIZATION_PROCESSORS_COMBINATION_TECHNIQUE_ARITHMETIC(
+        "combination_technique_arithmetic_mean",
+        "processors.search",
+        InfoStatType.INFO_COUNTER
+    ),
+    NORMALIZATION_PROCESSORS_COMBINATION_TECHNIQUE_GEOMETRIC(
+        "combination_technique_geometric_mean",
+        "processors.search",
+        InfoStatType.INFO_COUNTER
+    ),
+    NORMALIZATION_PROCESSORS_COMBINATION_TECHNIQUE_HARMONIC(
+        "combination_technique_harmonic_mean",
+        "processors.search",
+        InfoStatType.INFO_COUNTER
+    ),
+    NORMALIZATION_PROCESSORS_COMBINATION_TECHNIQUE_RRF("combination_technique_rrf", "processors.search", InfoStatType.INFO_COUNTER);
+>>>>>>> Stashed changes
 
     private final String nameString;
     private final String path;

@@ -18,7 +18,52 @@ import java.util.stream.Collectors;
  */
 @Getter
 public enum EventStatName implements StatName {
+<<<<<<< Updated upstream
     TEXT_EMBEDDING_PROCESSOR_EXECUTIONS("text_embedding_executions", "processors.ingest", EventStatType.TIMESTAMPED_EVENT_COUNTER);
+=======
+    TEXT_EMBEDDING_PROCESSOR_EXECUTIONS("text_embedding_executions", "processors.ingest", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    TEXT_CHUNKING_PROCESSOR_EXECUTIONS("text_chunking_executions", "processors.ingest", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    CHUNKING_FIXED_LENGTH_EXECUTIONS("chunking_fixed_length_executions", "processors.ingest", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    CHUNKING_DELIMITER_EXECUTIONS("chunking_delimiter_executions", "processors.ingest", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    NORMALIZATION_PROCESSOR_EXECUTIONS("normalization_processor_executions", "processors.search", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    NORMALIZATION_PROCESSOR_WITH_EXPLAIN_EXECUTIONS(
+        "normalization_processor_explain_executions",
+        "processors.search",
+        EventStatType.TIMESTAMPED_EVENT_COUNTER
+    ),
+    NORM_TECHNIQUE_L2_EXECUTIONS("normalization_technique_l2_executions", "processors.search", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    NORM_TECHNIQUE_MINMAX_EXECUTIONS(
+        "normalization_technique_minmax_executions",
+        "processors.search",
+        EventStatType.TIMESTAMPED_EVENT_COUNTER
+    ),
+    NORM_TECHNIQUE_NORM_ZSCORE_EXECUTIONS(
+        "normalization_technique_zscore_executions",
+        "processors.search",
+        EventStatType.TIMESTAMPED_EVENT_COUNTER
+    ),
+    NORM_TECHNIQUE_RRF_EXECUTIONS("normalization_technique_rrf_executions", "processors.search", EventStatType.TIMESTAMPED_EVENT_COUNTER),
+    COMBINATION_TECHNIQUE_ARITHMETIC_EXECUTIONS(
+        "combination_technique_arithmetic_executions",
+        "processors.search",
+        EventStatType.TIMESTAMPED_EVENT_COUNTER
+    ),
+    COMBINATION_TECHNIQUE_GEOMETRIC_EXECUTIONS(
+        "combination_technique_geometric_executions",
+        "processors.search",
+        EventStatType.TIMESTAMPED_EVENT_COUNTER
+    ),
+    COMBINATION_TECHNIQUE_HARMONIC_EXECUTIONS(
+        "combination_technique_harmonic_executions",
+        "processors.search",
+        EventStatType.TIMESTAMPED_EVENT_COUNTER
+    ),
+    COMBINATION_TECHNIQUE_RRF_EXECUTIONS(
+        "combination_technique_rrf_executions",
+        "processors.search",
+        EventStatType.TIMESTAMPED_EVENT_COUNTER
+    ),;
+>>>>>>> Stashed changes
 
     private final String nameString;
     private final String path;
