@@ -21,6 +21,8 @@ import org.opensearch.neuralsearch.highlight.SemanticHighlighterEngine;
 import org.opensearch.neuralsearch.highlight.extractor.QueryTextExtractorRegistry;
 import com.google.common.collect.ImmutableList;
 import org.opensearch.action.ActionRequest;
+import org.opensearch.neuralsearch.processor.lateinteraction.LateInteractionEmbeddingProcessorFactory;
+import org.opensearch.neuralsearch.processor.lateinteraction.LateInteractionEmbeddingProcessor;
 import org.opensearch.neuralsearch.settings.NeuralSearchSettingsAccessor;
 import org.opensearch.neuralsearch.stats.events.EventStatsManager;
 import org.opensearch.neuralsearch.stats.info.InfoStatsManager;
@@ -223,7 +225,14 @@ public class NeuralSearch extends Plugin
                 parameters.ingestService.getClusterService()
             ),
             TextChunkingProcessor.TYPE,
-            new TextChunkingProcessorFactory(parameters.env, parameters.ingestService.getClusterService(), parameters.analysisRegistry)
+            new TextChunkingProcessorFactory(parameters.env, parameters.ingestService.getClusterService(), parameters.analysisRegistry),
+            LateInteractionEmbeddingProcessor.TYPE,
+            new LateInteractionEmbeddingProcessorFactory(
+                parameters.client,
+                clientAccessor,
+                parameters.env,
+                parameters.ingestService.getClusterService()
+            )
         );
     }
 

@@ -179,7 +179,7 @@ public abstract class InferenceProcessor extends AbstractBatchingProcessor {
      * @param handler a callback handler to handle inference results which is a list of objects.
      * @param onException an exception callback to handle exception.
      */
-    abstract void doBatchExecute(List<String> inferenceList, Consumer<List<?>> handler, Consumer<Exception> onException);
+    protected abstract void doBatchExecute(List<String> inferenceList, Consumer<List<?>> handler, Consumer<Exception> onException);
 
     /**
      * This is the function which does actual inference work for subBatchExecute interface.
@@ -452,6 +452,13 @@ public abstract class InferenceProcessor extends AbstractBatchingProcessor {
         nlpResult.forEach(ingestDocument::setFieldValue);
     }
 
+    protected void setMultiVectorFieldsToDocument(IngestDocument ingestDocument, Map<String, Object> processorMap, List<?> results) {
+        Objects.requireNonNull(results, "embedding failed, inference returns null result!");
+        log.debug("Model inference result fetched, starting build vector output!");
+        Map<String, Object> nlpResult = buildMultiVectorNLPResult(processorMap, results, ingestDocument.getSourceAndMetadata());
+        nlpResult.forEach(ingestDocument::setFieldValue);
+    }
+
     /**
      * This method creates a MultiGetRequest from a list of ingest documents to be fetched for comparison
      * @param dataForInferences, list of data for inferences
@@ -485,6 +492,29 @@ public abstract class InferenceProcessor extends AbstractBatchingProcessor {
     @SuppressWarnings({ "unchecked" })
     @VisibleForTesting
     Map<String, Object> buildNLPResult(Map<String, Object> processorMap, List<?> results, Map<String, Object> sourceAndMetadataMap) {
+        IndexWrapper indexWrapper = new IndexWrapper(0);
+        Map<String, Object> result = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> knnMapEntry : processorMap.entrySet()) {
+            Pair<String, Object> processedNestedKey = processNestedKey(knnMapEntry);
+            String knnKey = processedNestedKey.getKey();
+            Object sourceValue = processedNestedKey.getValue();
+            if (sourceValue instanceof String) {
+                result.put(knnKey, results.get(indexWrapper.index++));
+            } else if (sourceValue instanceof List) {
+                result.put(knnKey, buildNLPResultForListType((List<String>) sourceValue, results, indexWrapper));
+            } else if (sourceValue instanceof Map) {
+                putNLPResultToSourceMapForMapType(knnKey, sourceValue, results, indexWrapper, sourceAndMetadataMap);
+            }
+        }
+        return result;
+    }
+
+    Map<String, Object> buildMultiVectorNLPResult(
+        Map<String, Object> processorMap,
+        List<?> results,
+        Map<String, Object> sourceAndMetadataMap
+    ) {
+        // Duplicate for now
         IndexWrapper indexWrapper = new IndexWrapper(0);
         Map<String, Object> result = new LinkedHashMap<>();
         for (Map.Entry<String, Object> knnMapEntry : processorMap.entrySet()) {

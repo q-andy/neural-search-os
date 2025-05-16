@@ -8,7 +8,6 @@ import static org.opensearch.neuralsearch.processor.TextImageEmbeddingProcessor.
 import static org.opensearch.neuralsearch.processor.TextImageEmbeddingProcessor.INPUT_TEXT;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -101,6 +100,13 @@ public class MLCommonsClientAccessor {
         retryableInferenceSentencesWithVectorResult(inferenceRequest, 0, listener);
     }
 
+    public void inferenceSentencesForLateInteraction(
+        @NonNull final TextInferenceRequest inferenceRequest,
+        @NonNull final ActionListener<List<List<List<Number>>>> listener
+    ) {
+        retryableInferenceSentencesWithMultiVectorResult(inferenceRequest, 0, listener);
+    }
+
     public void inferenceSentencesWithMapResult(
         @NonNull final TextInferenceRequest inferenceRequest,
         @NonNull final ActionListener<List<Map<String, ?>>> listener
@@ -173,6 +179,25 @@ public class MLCommonsClientAccessor {
         ));
     }
 
+    private void retryableInferenceSentencesWithMultiVectorResult(
+        final TextInferenceRequest inferenceRequest,
+        final int retryTime,
+        final ActionListener<List<List<List<Number>>>> listener
+    ) {
+        MLInput mlInput = createMLTextInput(inferenceRequest.getTargetResponseFilters(), inferenceRequest.getInputTexts());
+        mlClient.predict(inferenceRequest.getModelId(), mlInput, ActionListener.wrap(mlOutput -> {
+            final List<List<List<Number>>> vector = buildMultiVectorFromResponse(mlOutput);
+            listener.onResponse(vector);
+        },
+            e -> RetryUtil.handleRetryOrFailure(
+                e,
+                retryTime,
+                () -> retryableInferenceSentencesWithMultiVectorResult(inferenceRequest, retryTime + 1, listener),
+                listener
+            )
+        ));
+    }
+
     private void retryableInferenceSimilarityWithVectorResult(
         final SimilarityInferenceRequest inferenceRequest,
         final int retryTime,
@@ -212,10 +237,28 @@ public class MLCommonsClientAccessor {
         for (final ModelTensors tensors : tensorOutputList) {
             final List<ModelTensor> tensorsList = tensors.getMlModelTensors();
             for (final ModelTensor tensor : tensorsList) {
-                vector.add(Arrays.stream(tensor.getData()).map(value -> (T) value).collect(Collectors.toList()));
+                // vector.add(Arrays.stream(tensor.getData()).map(value -> (T) value).collect(Collectors.toList()));
+                List<?> response = (List<?>) tensor.getDataAsMap().get("response");
+                List<List<T>> multiVector = (List<List<T>>) ((List<?>) response.getFirst()).getFirst();
+                return multiVector;
             }
         }
         return vector;
+    }
+
+    private <T extends Number> List<List<List<T>>> buildMultiVectorFromResponse(MLOutput mlOutput) {
+        final List<List<List<T>>> multiVectors = new ArrayList<>();
+        final ModelTensorOutput modelTensorOutput = (ModelTensorOutput) mlOutput;
+        final List<ModelTensors> tensorOutputList = modelTensorOutput.getMlModelOutputs();
+        for (final ModelTensors tensors : tensorOutputList) {
+            final List<ModelTensor> tensorsList = tensors.getMlModelTensors();
+            for (final ModelTensor tensor : tensorsList) {
+                List<?> response = (List<?>) tensor.getDataAsMap().get("response");
+                List<List<T>> multiVector = (List<List<T>>) ((List<?>) response.getFirst()).getFirst();
+                multiVectors.add(multiVector);
+            }
+        }
+        return multiVectors;
     }
 
     private List<Map<String, ?>> buildMapResultFromResponse(MLOutput mlOutput) {
