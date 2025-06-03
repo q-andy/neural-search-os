@@ -13,7 +13,7 @@ import org.opensearch.core.common.io.stream.Writeable;
 import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.core.xcontent.ToXContentObject;
 import org.opensearch.core.xcontent.XContentBuilder;
-import org.opensearch.neuralsearch.rest.RestNeuralStatsAction;
+import org.opensearch.neuralsearch.rest.RestSearchRelevanceStatsAction;
 import org.opensearch.neuralsearch.stats.events.EventStatName;
 import org.opensearch.neuralsearch.stats.info.InfoStatName;
 
@@ -27,7 +27,7 @@ import java.util.List;
  * Responsible for filtering statistics by node IDs, event statistic types, and info stat types.
  */
 @Getter
-public class NeuralStatsInput implements ToXContentObject, Writeable {
+public class SearchRelevanceStatsInput implements ToXContentObject, Writeable {
     public static final String NODE_IDS_FIELD = "node_ids";
     public static final String EVENT_STAT_NAMES_FIELD = "event_stats";
     public static final String STATE_STAT_NAMES_FIELD = "state_stats";
@@ -70,7 +70,7 @@ public class NeuralStatsInput implements ToXContentObject, Writeable {
      * @param flatten whether to flatten keys
      */
     @Builder
-    public NeuralStatsInput(
+    public SearchRelevanceStatsInput(
         List<String> nodeIds,
         EnumSet<EventStatName> eventStatNames,
         EnumSet<InfoStatName> infoStatNames,
@@ -88,7 +88,7 @@ public class NeuralStatsInput implements ToXContentObject, Writeable {
      * Default constructor that initializes with empty filters and default settings.
      * By default, metadata is excluded and keys are not flattened.
      */
-    public NeuralStatsInput() {
+    public SearchRelevanceStatsInput() {
         this.nodeIds = new ArrayList<>();
         this.eventStatNames = EnumSet.noneOf(EventStatName.class);
         this.infoStatNames = EnumSet.noneOf(InfoStatName.class);
@@ -102,7 +102,7 @@ public class NeuralStatsInput implements ToXContentObject, Writeable {
      * @param input the StreamInput to read data from
      * @throws IOException if there's an error reading from the stream
      */
-    public NeuralStatsInput(StreamInput input) throws IOException {
+    public SearchRelevanceStatsInput(StreamInput input) throws IOException {
         nodeIds = input.readOptionalStringList();
         eventStatNames = input.readOptionalEnumSet(EventStatName.class);
         infoStatNames = input.readOptionalEnumSet(InfoStatName.class);
@@ -145,8 +145,8 @@ public class NeuralStatsInput implements ToXContentObject, Writeable {
         if (infoStatNames != null) {
             builder.field(STATE_STAT_NAMES_FIELD, infoStatNames);
         }
-        builder.field(RestNeuralStatsAction.INCLUDE_METADATA_PARAM, includeMetadata);
-        builder.field(RestNeuralStatsAction.FLATTEN_PARAM, flatten);
+        builder.field(RestSearchRelevanceStatsAction.INCLUDE_METADATA_PARAM, includeMetadata);
+        builder.field(RestSearchRelevanceStatsAction.FLATTEN_PARAM, flatten);
         builder.endObject();
         return builder;
     }

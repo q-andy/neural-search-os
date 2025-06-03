@@ -12,7 +12,7 @@ import org.opensearch.action.support.ActionFilters;
 import org.opensearch.cluster.ClusterName;
 import org.opensearch.cluster.node.DiscoveryNode;
 import org.opensearch.cluster.service.ClusterService;
-import org.opensearch.neuralsearch.stats.NeuralStatsInput;
+import org.opensearch.neuralsearch.stats.SearchRelevanceStatsInput;
 import org.opensearch.neuralsearch.stats.common.StatSnapshot;
 import org.opensearch.neuralsearch.stats.events.EventStatName;
 import org.opensearch.neuralsearch.stats.events.EventStatsManager;
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class NeuralStatsTransportActionTests extends OpenSearchTestCase {
+public class SearchRelevanceStatsTransportActionTests extends OpenSearchTestCase {
 
     @Mock
     private ThreadPool threadPool;
@@ -55,7 +55,7 @@ public class NeuralStatsTransportActionTests extends OpenSearchTestCase {
     @Mock
     private InfoStatsManager infoStatsManager;
 
-    private NeuralStatsTransportAction transportAction;
+    private SearchRelevanceStatsTransportAction transportAction;
     private ClusterName clusterName;
 
     @Before
@@ -64,7 +64,7 @@ public class NeuralStatsTransportActionTests extends OpenSearchTestCase {
         clusterName = new ClusterName("test-cluster");
         when(clusterService.getClusterName()).thenReturn(clusterName);
 
-        transportAction = new NeuralStatsTransportAction(
+        transportAction = new SearchRelevanceStatsTransportAction(
             threadPool,
             clusterService,
             transportService,
@@ -76,13 +76,13 @@ public class NeuralStatsTransportActionTests extends OpenSearchTestCase {
 
     public void test_newResponse() {
         // Create inputs
-        NeuralStatsInput input = new NeuralStatsInput();
-        NeuralStatsRequest request = new NeuralStatsRequest(new String[] {}, input);
-        List<NeuralStatsNodeResponse> responses = new ArrayList<>();
+        SearchRelevanceStatsInput input = new SearchRelevanceStatsInput();
+        SearchRelevanceStatsRequest request = new SearchRelevanceStatsRequest(new String[] {}, input);
+        List<SearchRelevanceStatsNodeResponse> responses = new ArrayList<>();
         List<FailedNodeException> failures = new ArrayList<>();
 
         // Execute response
-        NeuralStatsResponse response = transportAction.newResponse(request, responses, failures);
+        SearchRelevanceStatsResponse response = transportAction.newResponse(request, responses, failures);
 
         // Validate response
         assertNotNull(response);
@@ -95,8 +95,8 @@ public class NeuralStatsTransportActionTests extends OpenSearchTestCase {
         EnumSet<EventStatName> eventStats = EnumSet.of(EventStatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS);
         EnumSet<InfoStatName> infoStats = EnumSet.of(InfoStatName.TEXT_EMBEDDING_PROCESSORS);
 
-        NeuralStatsInput input = NeuralStatsInput.builder().eventStatNames(eventStats).infoStatNames(infoStats).build();
-        NeuralStatsRequest request = new NeuralStatsRequest(new String[] {}, input);
+        SearchRelevanceStatsInput input = SearchRelevanceStatsInput.builder().eventStatNames(eventStats).infoStatNames(infoStats).build();
+        SearchRelevanceStatsRequest request = new SearchRelevanceStatsRequest(new String[] {}, input);
 
         // Create multiple nodes
         DiscoveryNode node1 = mock(DiscoveryNode.class);
@@ -124,9 +124,9 @@ public class NeuralStatsTransportActionTests extends OpenSearchTestCase {
         Map<EventStatName, TimestampedEventStatSnapshot> nodeStats2 = new HashMap<>();
         nodeStats2.put(EventStatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS, snapshot2);
 
-        List<NeuralStatsNodeResponse> responses = Arrays.asList(
-            new NeuralStatsNodeResponse(node1, nodeStats1),
-            new NeuralStatsNodeResponse(node2, nodeStats2)
+        List<SearchRelevanceStatsNodeResponse> responses = Arrays.asList(
+            new SearchRelevanceStatsNodeResponse(node1, nodeStats1),
+            new SearchRelevanceStatsNodeResponse(node2, nodeStats2)
         );
 
         // Create info stats
@@ -139,7 +139,7 @@ public class NeuralStatsTransportActionTests extends OpenSearchTestCase {
         List<FailedNodeException> failures = new ArrayList<>();
 
         // Execute
-        NeuralStatsResponse response = transportAction.newResponse(request, responses, failures);
+        SearchRelevanceStatsResponse response = transportAction.newResponse(request, responses, failures);
 
         // Verify node level event stats
         assertNotNull(response);
@@ -183,10 +183,10 @@ public class NeuralStatsTransportActionTests extends OpenSearchTestCase {
 
     public void test_nodeOperation() {
         EnumSet<EventStatName> eventStats = EnumSet.of(EventStatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS);
-        NeuralStatsInput input = NeuralStatsInput.builder().eventStatNames(eventStats).build();
+        SearchRelevanceStatsInput input = SearchRelevanceStatsInput.builder().eventStatNames(eventStats).build();
 
-        NeuralStatsRequest request = new NeuralStatsRequest(new String[] {}, input);
-        NeuralStatsNodeRequest nodeRequest = new NeuralStatsNodeRequest(request);
+        SearchRelevanceStatsRequest request = new SearchRelevanceStatsRequest(new String[] {}, input);
+        SearchRelevanceStatsNodeRequest nodeRequest = new SearchRelevanceStatsNodeRequest(request);
 
         DiscoveryNode localNode = mock(DiscoveryNode.class);
         when(clusterService.localNode()).thenReturn(localNode);
@@ -202,7 +202,7 @@ public class NeuralStatsTransportActionTests extends OpenSearchTestCase {
         mockStats.put(EventStatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS, snapshot2);
         when(eventStatsManager.getTimestampedEventStatSnapshots(eventStats)).thenReturn(mockStats);
 
-        NeuralStatsNodeResponse response = transportAction.nodeOperation(nodeRequest);
+        SearchRelevanceStatsNodeResponse response = transportAction.nodeOperation(nodeRequest);
 
         assertNotNull(response);
         assertEquals(localNode, response.getNode());

@@ -29,13 +29,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- *  NeuralStatsTransportAction contains the logic to extract the stats from the nodes
+ *  SearchRelevanceStatsTransportAction contains the logic to extract the stats from the nodes
  */
-public class NeuralStatsTransportAction extends TransportNodesAction<
-    NeuralStatsRequest,
-    NeuralStatsResponse,
-    NeuralStatsNodeRequest,
-    NeuralStatsNodeResponse> {
+public class SearchRelevanceStatsTransportAction extends TransportNodesAction<
+        SearchRelevanceStatsRequest,
+        SearchRelevanceStatsResponse,
+        SearchRelevanceStatsNodeRequest,
+        SearchRelevanceStatsNodeResponse> {
     private final EventStatsManager eventStatsManager;
     private final InfoStatsManager infoStatsManager;
 
@@ -48,7 +48,7 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
      * @param actionFilters Action Filters
      */
     @Inject
-    public NeuralStatsTransportAction(
+    public SearchRelevanceStatsTransportAction(
         ThreadPool threadPool,
         ClusterService clusterService,
         TransportService transportService,
@@ -57,24 +57,24 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
         InfoStatsManager infoStatsManager
     ) {
         super(
-            NeuralStatsAction.NAME,
+            SearchRelevanceStatsAction.NAME,
             threadPool,
             clusterService,
             transportService,
             actionFilters,
-            NeuralStatsRequest::new,
-            NeuralStatsNodeRequest::new,
+            SearchRelevanceStatsRequest::new,
+            SearchRelevanceStatsNodeRequest::new,
             ThreadPool.Names.MANAGEMENT,
-            NeuralStatsNodeResponse.class
+            SearchRelevanceStatsNodeResponse.class
         );
         this.eventStatsManager = eventStatsManager;
         this.infoStatsManager = infoStatsManager;
     }
 
     @Override
-    protected NeuralStatsResponse newResponse(
-        NeuralStatsRequest request,
-        List<NeuralStatsNodeResponse> responses,
+    protected SearchRelevanceStatsResponse newResponse(
+        SearchRelevanceStatsRequest request,
+        List<SearchRelevanceStatsNodeResponse> responses,
         List<FailedNodeException> failures
     ) {
         // Final object that will hold the stats in format Map<ResponsePath, Value>
@@ -86,37 +86,37 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
         // Sum the map to aggregate
         Map<String, StatSnapshot<?>> aggregatedNodeStats = aggregateNodesResponses(
             responses,
-            request.getNeuralStatsInput().getEventStatNames()
+            request.getSearchRelevanceStatsInput().getEventStatNames()
         );
 
         // Get info stats
-        Map<InfoStatName, StatSnapshot<?>> infoStats = infoStatsManager.getStats(request.getNeuralStatsInput().getInfoStatNames());
+        Map<InfoStatName, StatSnapshot<?>> infoStats = infoStatsManager.getStats(request.getSearchRelevanceStatsInput().getInfoStatNames());
 
         // Convert stat name keys into flat path strings
         Map<String, StatSnapshot<?>> flatInfoStats = infoStats.entrySet()
             .stream()
             .collect(Collectors.toMap(entry -> entry.getKey().getFullPath(), Map.Entry::getValue));
 
-        return new NeuralStatsResponse(
+        return new SearchRelevanceStatsResponse(
             clusterService.getClusterName(),
             responses,
             failures,
             flatInfoStats,
             aggregatedNodeStats,
             nodeIdToEventStats,
-            request.getNeuralStatsInput().isFlatten(),
-            request.getNeuralStatsInput().isIncludeMetadata()
+            request.getSearchRelevanceStatsInput().isFlatten(),
+            request.getSearchRelevanceStatsInput().isIncludeMetadata()
         );
     }
 
     @Override
-    protected NeuralStatsNodeRequest newNodeRequest(NeuralStatsRequest request) {
-        return new NeuralStatsNodeRequest(request);
+    protected SearchRelevanceStatsNodeRequest newNodeRequest(SearchRelevanceStatsRequest request) {
+        return new SearchRelevanceStatsNodeRequest(request);
     }
 
     @Override
-    protected NeuralStatsNodeResponse newNodeResponse(StreamInput in) throws IOException {
-        return new NeuralStatsNodeResponse(in);
+    protected SearchRelevanceStatsNodeResponse newNodeResponse(StreamInput in) throws IOException {
+        return new SearchRelevanceStatsNodeResponse(in);
     }
 
     /**
@@ -125,14 +125,14 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
      * @return the node level response containing node level event stats
      */
     @Override
-    protected NeuralStatsNodeResponse nodeOperation(NeuralStatsNodeRequest request) {
+    protected SearchRelevanceStatsNodeResponse nodeOperation(SearchRelevanceStatsNodeRequest request) {
         // Reads from NeuralStats to node level stats on an individual node
-        EnumSet<EventStatName> eventStatsToRetrieve = request.getRequest().getNeuralStatsInput().getEventStatNames();
+        EnumSet<EventStatName> eventStatsToRetrieve = request.getRequest().getSearchRelevanceStatsInput().getEventStatNames();
         Map<EventStatName, TimestampedEventStatSnapshot> eventStatDataMap = eventStatsManager.getTimestampedEventStatSnapshots(
             eventStatsToRetrieve
         );
 
-        return new NeuralStatsNodeResponse(clusterService.localNode(), eventStatDataMap);
+        return new SearchRelevanceStatsNodeResponse(clusterService.localNode(), eventStatDataMap);
     }
 
     /**
@@ -142,7 +142,7 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
      * @return A map associating cluster level aggregated stat name strings with their stat snapshot values
      */
     private Map<String, StatSnapshot<?>> aggregateNodesResponses(
-        List<NeuralStatsNodeResponse> responses,
+        List<SearchRelevanceStatsNodeResponse> responses,
         EnumSet<EventStatName> statsToRetrieve
     ) {
         // Catch empty nodes responses case.
@@ -152,7 +152,7 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
 
         // Convert node responses into list of Map<EventStatName, EventStatData>
         List<Map<EventStatName, TimestampedEventStatSnapshot>> nodeEventStatsList = responses.stream()
-            .map(NeuralStatsNodeResponse::getStats)
+            .map(SearchRelevanceStatsNodeResponse::getStats)
             .map(map -> map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
             .toList();
 
@@ -182,12 +182,12 @@ public class NeuralStatsTransportAction extends TransportNodesAction<
      * @param nodeResponses node stat responses
      * @return A map of node id strings to their event stat data
      */
-    private Map<String, Map<String, StatSnapshot<?>>> processorNodeEventStatsIntoMap(List<NeuralStatsNodeResponse> nodeResponses) {
+    private Map<String, Map<String, StatSnapshot<?>>> processorNodeEventStatsIntoMap(List<SearchRelevanceStatsNodeResponse> nodeResponses) {
         // Converts list of node responses into Map<NodeId, EventStats>
         Map<String, Map<String, StatSnapshot<?>>> results = new HashMap<>();
 
         String nodeId;
-        for (NeuralStatsNodeResponse nodesResponse : nodeResponses) {
+        for (SearchRelevanceStatsNodeResponse nodesResponse : nodeResponses) {
             nodeId = nodesResponse.getNode().getId();
 
             // Convert StatNames into paths

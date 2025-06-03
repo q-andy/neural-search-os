@@ -21,10 +21,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * NeuralStatsResponse consists of the aggregated responses from the nodes
+ * SearchRelevanceStatsResponse consists of the aggregated responses from the nodes
  */
 @Getter
-public class NeuralStatsResponse extends BaseNodesResponse<NeuralStatsNodeResponse> implements ToXContentObject {
+public class SearchRelevanceStatsResponse extends BaseNodesResponse<SearchRelevanceStatsNodeResponse> implements ToXContentObject {
     public static final String INFO_KEY_PREFIX = "info";
     public static final String NODES_KEY_PREFIX = "nodes";
     public static final String AGGREGATED_NODES_KEY_PREFIX = "all_nodes";
@@ -41,8 +41,8 @@ public class NeuralStatsResponse extends BaseNodesResponse<NeuralStatsNodeRespon
      * @param in StreamInput
      * @throws IOException thrown when unable to read from stream
      */
-    public NeuralStatsResponse(StreamInput in) throws IOException {
-        super(new ClusterName(in), in.readList(NeuralStatsNodeResponse::readStats), in.readList(FailedNodeException::new));
+    public SearchRelevanceStatsResponse(StreamInput in) throws IOException {
+        super(new ClusterName(in), in.readList(SearchRelevanceStatsNodeResponse::readStats), in.readList(FailedNodeException::new));
         Map<String, StatSnapshot<?>> castedInfoStats = (Map<String, StatSnapshot<?>>) (Map) in.readMap();
         Map<String, StatSnapshot<?>> castedAggregatedNodeStats = (Map<String, StatSnapshot<?>>) (Map) in.readMap();
         Map<String, Map<String, StatSnapshot<?>>> castedNodeIdToNodeEventStats = (Map<String, Map<String, StatSnapshot<?>>>) (Map) in
@@ -67,9 +67,9 @@ public class NeuralStatsResponse extends BaseNodesResponse<NeuralStatsNodeRespon
      * @param flatten whether to flatten keys
      * @param includeMetadata whether to include metadata
      */
-    public NeuralStatsResponse(
+    public SearchRelevanceStatsResponse(
         ClusterName clusterName,
-        List<NeuralStatsNodeResponse> nodes,
+        List<SearchRelevanceStatsNodeResponse> nodes,
         List<FailedNodeException> failures,
         Map<String, StatSnapshot<?>> infoStats,
         Map<String, StatSnapshot<?>> aggregatedNodeStats,
@@ -100,13 +100,13 @@ public class NeuralStatsResponse extends BaseNodesResponse<NeuralStatsNodeRespon
     }
 
     @Override
-    public void writeNodesTo(StreamOutput out, List<NeuralStatsNodeResponse> nodes) throws IOException {
+    public void writeNodesTo(StreamOutput out, List<SearchRelevanceStatsNodeResponse> nodes) throws IOException {
         out.writeList(nodes);
     }
 
     @Override
-    public List<NeuralStatsNodeResponse> readNodesFrom(StreamInput in) throws IOException {
-        return in.readList(NeuralStatsNodeResponse::readStats);
+    public List<SearchRelevanceStatsNodeResponse> readNodesFrom(StreamInput in) throws IOException {
+        return in.readList(SearchRelevanceStatsNodeResponse::readStats);
     }
 
     @Override

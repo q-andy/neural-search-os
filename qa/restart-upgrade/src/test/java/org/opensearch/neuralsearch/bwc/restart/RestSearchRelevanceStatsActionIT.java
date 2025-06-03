@@ -16,7 +16,7 @@ import static org.opensearch.neuralsearch.util.TestUtils.NODES_BWC_CLUSTER;
 import static org.opensearch.neuralsearch.util.TestUtils.TEXT_EMBEDDING_PROCESSOR;
 import static org.opensearch.neuralsearch.util.TestUtils.getModelId;
 
-public class RestNeuralStatsActionIT extends AbstractRestartUpgradeRestTestCase {
+public class RestSearchRelevanceStatsActionIT extends AbstractRestartUpgradeRestTestCase {
     private static final String PIPELINE_NAME = "nlp-pipeline";
     private static final String TEST_FIELD = "passage_text";
     private static final String TEXT = "Hello world";

@@ -11,11 +11,11 @@ import lombok.extern.log4j.Log4j2;
 import org.opensearch.common.util.set.Sets;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.neuralsearch.settings.NeuralSearchSettingsAccessor;
-import org.opensearch.neuralsearch.stats.NeuralStatsInput;
+import org.opensearch.neuralsearch.stats.SearchRelevanceStatsInput;
 import org.opensearch.neuralsearch.stats.events.EventStatName;
 import org.opensearch.neuralsearch.stats.info.InfoStatName;
-import org.opensearch.neuralsearch.transport.NeuralStatsAction;
-import org.opensearch.neuralsearch.transport.NeuralStatsRequest;
+import org.opensearch.neuralsearch.transport.SearchRelevanceStatsAction;
+import org.opensearch.neuralsearch.transport.SearchRelevanceStatsRequest;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.RestRequest;
@@ -39,7 +39,7 @@ import static org.opensearch.neuralsearch.plugin.NeuralSearch.NEURAL_BASE_URI;
  */
 @Log4j2
 @AllArgsConstructor
-public class RestNeuralStatsAction extends BaseRestHandler {
+public class RestSearchRelevanceStatsAction extends BaseRestHandler {
     /**
      * Path parameter name for specified stats
      */
@@ -126,11 +126,11 @@ public class RestNeuralStatsAction extends BaseRestHandler {
         }
 
         // Read inputs and convert to BaseNodesRequest with correct info configured
-        NeuralStatsRequest neuralStatsRequest = createNeuralStatsRequest(request);
+        SearchRelevanceStatsRequest searchRelevanceStatsRequest = createNeuralStatsRequest(request);
 
         return channel -> client.execute(
-            NeuralStatsAction.INSTANCE,
-            neuralStatsRequest,
+            SearchRelevanceStatsAction.INSTANCE,
+                searchRelevanceStatsRequest,
             new RestActions.NodesResponseRestListener<>(channel)
         );
     }
@@ -141,47 +141,47 @@ public class RestNeuralStatsAction extends BaseRestHandler {
      * @param request Rest request
      * @return NeuralStatsRequest
      */
-    private NeuralStatsRequest createNeuralStatsRequest(RestRequest request) {
-        NeuralStatsInput neuralStatsInput = createNeuralStatsInputFromRequestParams(request);
-        String[] nodeIdsArr = neuralStatsInput.getNodeIds().toArray(new String[0]);
+    private SearchRelevanceStatsRequest createNeuralStatsRequest(RestRequest request) {
+        SearchRelevanceStatsInput searchRelevanceStatsInput = createNeuralStatsInputFromRequestParams(request);
+        String[] nodeIdsArr = searchRelevanceStatsInput.getNodeIds().toArray(new String[0]);
 
-        NeuralStatsRequest neuralStatsRequest = new NeuralStatsRequest(nodeIdsArr, neuralStatsInput);
-        neuralStatsRequest.timeout(request.param("timeout"));
+        SearchRelevanceStatsRequest searchRelevanceStatsRequest = new SearchRelevanceStatsRequest(nodeIdsArr, searchRelevanceStatsInput);
+        searchRelevanceStatsRequest.timeout(request.param("timeout"));
 
-        return neuralStatsRequest;
+        return searchRelevanceStatsRequest;
     }
 
-    private NeuralStatsInput createNeuralStatsInputFromRequestParams(RestRequest request) {
-        NeuralStatsInput neuralStatsInput = new NeuralStatsInput();
+    private SearchRelevanceStatsInput createNeuralStatsInputFromRequestParams(RestRequest request) {
+        SearchRelevanceStatsInput searchRelevanceStatsInput = new SearchRelevanceStatsInput();
 
         // Parse specified nodes
         Optional<String[]> nodeIds = splitCommaSeparatedParam(request, NODE_ID_PARAM);
         if (nodeIds.isPresent()) {
             // Ignore node ids that don't pattern match
             List<String> validFormatNodeIds = Arrays.stream(nodeIds.get()).filter(this::isValidNodeId).toList();
-            neuralStatsInput.getNodeIds().addAll(validFormatNodeIds);
+            searchRelevanceStatsInput.getNodeIds().addAll(validFormatNodeIds);
         }
 
         // Parse query parameters
         boolean flatten = request.paramAsBoolean(FLATTEN_PARAM, false);
-        neuralStatsInput.setFlatten(flatten);
+        searchRelevanceStatsInput.setFlatten(flatten);
 
         boolean includeMetadata = request.paramAsBoolean(INCLUDE_METADATA_PARAM, false);
-        neuralStatsInput.setIncludeMetadata(includeMetadata);
+        searchRelevanceStatsInput.setIncludeMetadata(includeMetadata);
 
         // Process requested stats parameters
-        processStatsRequestParameters(request, neuralStatsInput);
+        processStatsRequestParameters(request, searchRelevanceStatsInput);
 
-        return neuralStatsInput;
+        return searchRelevanceStatsInput;
     }
 
-    private void processStatsRequestParameters(RestRequest request, NeuralStatsInput neuralStatsInput) {
+    private void processStatsRequestParameters(RestRequest request, SearchRelevanceStatsInput searchRelevanceStatsInput) {
         // Determine which stat names to retrieve based on user parameters
         Optional<String[]> optionalStats = splitCommaSeparatedParam(request, STAT_PARAM);
 
         if (optionalStats.isPresent() == false || optionalStats.get().length == 0) {
             // No specific stats requested, add all stats by default
-            addAllStats(neuralStatsInput);
+            addAllStats(searchRelevanceStatsInput);
             return;
         }
 
@@ -196,9 +196,9 @@ public class RestNeuralStatsAction extends BaseRestHandler {
             }
 
             if (EVENT_STAT_NAMES.contains(normalizedStat)) {
-                neuralStatsInput.getEventStatNames().add(EventStatName.from(normalizedStat));
+                searchRelevanceStatsInput.getEventStatNames().add(EventStatName.from(normalizedStat));
             } else if (STATE_STAT_NAMES.contains(normalizedStat)) {
-                neuralStatsInput.getInfoStatNames().add(InfoStatName.from(normalizedStat));
+                searchRelevanceStatsInput.getInfoStatNames().add(InfoStatName.from(normalizedStat));
             } else {
                 invalidStatNames.add(normalizedStat);
             }
@@ -213,9 +213,9 @@ public class RestNeuralStatsAction extends BaseRestHandler {
         }
     }
 
-    private void addAllStats(NeuralStatsInput neuralStatsInput) {
-        neuralStatsInput.getEventStatNames().addAll(EnumSet.allOf(EventStatName.class));
-        neuralStatsInput.getInfoStatNames().addAll(EnumSet.allOf(InfoStatName.class));
+    private void addAllStats(SearchRelevanceStatsInput searchRelevanceStatsInput) {
+        searchRelevanceStatsInput.getEventStatNames().addAll(EnumSet.allOf(EventStatName.class));
+        searchRelevanceStatsInput.getInfoStatNames().addAll(EnumSet.allOf(InfoStatName.class));
     }
 
     private Optional<String[]> splitCommaSeparatedParam(RestRequest request, String paramName) {

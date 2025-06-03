@@ -9,7 +9,7 @@ import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.common.io.stream.StreamOutput;
 import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.core.xcontent.XContentBuilder;
-import org.opensearch.neuralsearch.rest.RestNeuralStatsAction;
+import org.opensearch.neuralsearch.rest.RestSearchRelevanceStatsAction;
 import org.opensearch.neuralsearch.stats.events.EventStatName;
 import org.opensearch.neuralsearch.stats.info.InfoStatName;
 import org.opensearch.test.OpenSearchTestCase;
@@ -28,14 +28,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.opensearch.neuralsearch.util.TestUtils.xContentBuilderToMap;
 
-public class NeuralStatsInputTests extends OpenSearchTestCase {
+public class SearchRelevanceStatsInputTests extends OpenSearchTestCase {
     private static final String NODE_ID_1 = "node1";
     private static final String NODE_ID_2 = "node2";
     private static final EventStatName EVENT_STAT = EventStatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS;
     private static final InfoStatName STATE_STAT = InfoStatName.TEXT_EMBEDDING_PROCESSORS;
 
     public void test_defaultConstructorEmpty() {
-        NeuralStatsInput input = new NeuralStatsInput();
+        SearchRelevanceStatsInput input = new SearchRelevanceStatsInput();
 
         assertTrue(input.getNodeIds().isEmpty());
         assertTrue(input.getEventStatNames().isEmpty());
@@ -49,7 +49,7 @@ public class NeuralStatsInputTests extends OpenSearchTestCase {
         EnumSet<EventStatName> eventStats = EnumSet.of(EVENT_STAT);
         EnumSet<InfoStatName> infoStats = EnumSet.of(STATE_STAT);
 
-        NeuralStatsInput input = NeuralStatsInput.builder()
+        SearchRelevanceStatsInput input = SearchRelevanceStatsInput.builder()
             .nodeIds(nodeIds)
             .eventStatNames(eventStats)
             .infoStatNames(infoStats)
@@ -75,7 +75,7 @@ public class NeuralStatsInputTests extends OpenSearchTestCase {
         when(mockInput.readOptionalEnumSet(EventStatName.class)).thenReturn(EnumSet.of(EVENT_STAT));
         when(mockInput.readOptionalEnumSet(InfoStatName.class)).thenReturn(EnumSet.of(STATE_STAT));
 
-        NeuralStatsInput input = new NeuralStatsInput(mockInput);
+        SearchRelevanceStatsInput input = new SearchRelevanceStatsInput(mockInput);
 
         assertEquals(Arrays.asList(NODE_ID_1, NODE_ID_2), input.getNodeIds());
         assertEquals(EnumSet.of(EVENT_STAT), input.getEventStatNames());
@@ -93,7 +93,7 @@ public class NeuralStatsInputTests extends OpenSearchTestCase {
         EnumSet<EventStatName> eventStats = EnumSet.of(EVENT_STAT);
         EnumSet<InfoStatName> infoStats = EnumSet.of(STATE_STAT);
 
-        NeuralStatsInput input = NeuralStatsInput.builder()
+        SearchRelevanceStatsInput input = SearchRelevanceStatsInput.builder()
             .nodeIds(nodeIds)
             .eventStatNames(eventStats)
             .infoStatNames(infoStats)
@@ -117,7 +117,7 @@ public class NeuralStatsInputTests extends OpenSearchTestCase {
         EnumSet<EventStatName> eventStats = EnumSet.of(EVENT_STAT);
         EnumSet<InfoStatName> infoStats = EnumSet.of(STATE_STAT);
 
-        NeuralStatsInput input = NeuralStatsInput.builder()
+        SearchRelevanceStatsInput input = SearchRelevanceStatsInput.builder()
             .nodeIds(nodeIds)
             .eventStatNames(eventStats)
             .infoStatNames(infoStats)
@@ -132,12 +132,12 @@ public class NeuralStatsInputTests extends OpenSearchTestCase {
         assertEquals(Collections.singletonList(NODE_ID_1), responseMap.get("node_ids"));
         assertEquals(Collections.singletonList(EVENT_STAT.getNameString()), responseMap.get("event_stats"));
         assertEquals(Collections.singletonList(STATE_STAT.getNameString()), responseMap.get("state_stats"));
-        assertEquals(true, responseMap.get(RestNeuralStatsAction.INCLUDE_METADATA_PARAM));
-        assertEquals(true, responseMap.get(RestNeuralStatsAction.FLATTEN_PARAM));
+        assertEquals(true, responseMap.get(RestSearchRelevanceStatsAction.INCLUDE_METADATA_PARAM));
+        assertEquals(true, responseMap.get(RestSearchRelevanceStatsAction.FLATTEN_PARAM));
     }
 
     public void test_writeToHandlesEmptyCollections() throws IOException {
-        NeuralStatsInput input = new NeuralStatsInput();
+        SearchRelevanceStatsInput input = new SearchRelevanceStatsInput();
         StreamOutput mockOutput = mock(StreamOutput.class);
 
         input.writeTo(mockOutput);

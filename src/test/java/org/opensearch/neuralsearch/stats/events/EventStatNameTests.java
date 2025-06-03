@@ -4,7 +4,7 @@
  */
 package org.opensearch.neuralsearch.stats.events;
 
-import org.opensearch.neuralsearch.rest.RestNeuralStatsAction;
+import org.opensearch.neuralsearch.rest.RestSearchRelevanceStatsAction;
 import org.opensearch.test.OpenSearchTestCase;
 
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ public class EventStatNameTests extends OpenSearchTestCase {
         for (EventStatName statName : EVENT_STATS) {
             String name = statName.getNameString().toLowerCase(Locale.ROOT);
             assertFalse(String.format(Locale.ROOT, "Checking name uniqueness for %s", name), names.contains(name));
-            assertTrue(RestNeuralStatsAction.isValidParamString(name));
+            assertTrue(RestSearchRelevanceStatsAction.isValidParamString(name));
             names.add(name);
         }
     }

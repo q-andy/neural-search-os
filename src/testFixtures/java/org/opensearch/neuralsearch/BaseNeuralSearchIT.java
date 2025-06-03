@@ -68,7 +68,7 @@ import org.opensearch.neuralsearch.processor.NormalizationProcessor;
 import org.opensearch.neuralsearch.processor.ExplanationResponseProcessor;
 import org.opensearch.neuralsearch.stats.events.EventStatName;
 import org.opensearch.neuralsearch.stats.info.InfoStatName;
-import org.opensearch.neuralsearch.transport.NeuralStatsResponse;
+import org.opensearch.neuralsearch.transport.SearchRelevanceStatsResponse;
 import org.opensearch.neuralsearch.util.NeuralSearchClusterUtil;
 import org.opensearch.neuralsearch.util.TokenWeightUtil;
 import org.opensearch.search.SearchHit;
@@ -2287,12 +2287,12 @@ public abstract class BaseNeuralSearchIT extends OpenSearchSecureRestTestCase {
 
     protected Map<String, Object> parseInfoStatsResponse(String responseBody) throws IOException {
         Map<String, Object> responseMap = createParser(MediaTypeRegistry.getDefaultMediaType().xContent(), responseBody).map();
-        return (Map<String, Object>) responseMap.get(NeuralStatsResponse.INFO_KEY_PREFIX);
+        return (Map<String, Object>) responseMap.get(SearchRelevanceStatsResponse.INFO_KEY_PREFIX);
     }
 
     protected Map<String, Object> parseAggregatedNodeStatsResponse(String responseBody) throws IOException {
         Map<String, Object> responseMap = createParser(MediaTypeRegistry.getDefaultMediaType().xContent(), responseBody).map();
-        return (Map<String, Object>) responseMap.get(NeuralStatsResponse.AGGREGATED_NODES_KEY_PREFIX);
+        return (Map<String, Object>) responseMap.get(SearchRelevanceStatsResponse.AGGREGATED_NODES_KEY_PREFIX);
     }
 
     protected List<Map<String, Object>> parseNodeStatsResponse(String responseBody) throws IOException {

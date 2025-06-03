@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 @Log4j2
-public class RestNeuralStatsActionIT extends BaseNeuralSearchIT {
+public class RestSearchRelevanceStatsActionIT extends BaseNeuralSearchIT {
     private static final String INDEX_NAME = "stats_index";
     private static final String INDEX_NAME_2 = "stats_index_2";
     private static final String INDEX_NAME_3 = "stats_index_3";
@@ -44,7 +44,7 @@ public class RestNeuralStatsActionIT extends BaseNeuralSearchIT {
     private final String INGEST_DOC4 = Files.readString(Path.of(classLoader.getResource("processor/ingest_doc4.json").toURI()));
     private final String INGEST_DOC5 = Files.readString(Path.of(classLoader.getResource("processor/ingest_doc5.json").toURI()));
 
-    public RestNeuralStatsActionIT() throws IOException, URISyntaxException {}
+    public RestSearchRelevanceStatsActionIT() throws IOException, URISyntaxException {}
 
     @Before
     public void setUp() throws Exception {
@@ -122,7 +122,7 @@ public class RestNeuralStatsActionIT extends BaseNeuralSearchIT {
 
     public void test_flatten() throws Exception {
         Map<String, String> params = new HashMap<>();
-        params.put(RestNeuralStatsAction.FLATTEN_PARAM, "true");
+        params.put(RestSearchRelevanceStatsAction.FLATTEN_PARAM, "true");
 
         String responseBody = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>(), params);
 
@@ -135,7 +135,7 @@ public class RestNeuralStatsActionIT extends BaseNeuralSearchIT {
 
     public void test_includeMetadata() throws Exception {
         Map<String, String> params = new HashMap<>();
-        params.put(RestNeuralStatsAction.INCLUDE_METADATA_PARAM, "true");
+        params.put(RestSearchRelevanceStatsAction.INCLUDE_METADATA_PARAM, "true");
 
         String responseBody = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>(), params);
         Map<String, Object> stats = parseInfoStatsResponse(responseBody);
@@ -153,7 +153,7 @@ public class RestNeuralStatsActionIT extends BaseNeuralSearchIT {
         assertEquals(InfoStatType.INFO_STRING.getTypeString(), statType);
 
         // Fetch Without metadata
-        params.put(RestNeuralStatsAction.INCLUDE_METADATA_PARAM, "false");
+        params.put(RestSearchRelevanceStatsAction.INCLUDE_METADATA_PARAM, "false");
 
         responseBody = executeNeuralStatRequest(new ArrayList<>(), new ArrayList<>(), params);
         stats = parseInfoStatsResponse(responseBody);

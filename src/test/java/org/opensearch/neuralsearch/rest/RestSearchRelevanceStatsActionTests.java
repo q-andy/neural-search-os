@@ -14,12 +14,12 @@ import org.opensearch.core.rest.RestStatus;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.neuralsearch.processor.InferenceProcessorTestCase;
 import org.opensearch.neuralsearch.settings.NeuralSearchSettingsAccessor;
-import org.opensearch.neuralsearch.stats.NeuralStatsInput;
+import org.opensearch.neuralsearch.stats.SearchRelevanceStatsInput;
 import org.opensearch.neuralsearch.stats.events.EventStatName;
 import org.opensearch.neuralsearch.stats.info.InfoStatName;
-import org.opensearch.neuralsearch.transport.NeuralStatsAction;
-import org.opensearch.neuralsearch.transport.NeuralStatsRequest;
-import org.opensearch.neuralsearch.transport.NeuralStatsResponse;
+import org.opensearch.neuralsearch.transport.SearchRelevanceStatsAction;
+import org.opensearch.neuralsearch.transport.SearchRelevanceStatsRequest;
+import org.opensearch.neuralsearch.transport.SearchRelevanceStatsResponse;
 import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.RestChannel;
 import org.opensearch.rest.RestRequest;
@@ -41,7 +41,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class RestNeuralStatsActionTests extends InferenceProcessorTestCase {
+public class RestSearchRelevanceStatsActionTests extends InferenceProcessorTestCase {
     private NodeClient client;
     private ThreadPool threadPool;
 
@@ -59,9 +59,9 @@ public class RestNeuralStatsActionTests extends InferenceProcessorTestCase {
         client = spy(new NodeClient(Settings.EMPTY, threadPool));
 
         doAnswer(invocation -> {
-            ActionListener<NeuralStatsResponse> actionListener = invocation.getArgument(2);
+            ActionListener<SearchRelevanceStatsResponse> actionListener = invocation.getArgument(2);
             return null;
-        }).when(client).execute(eq(NeuralStatsAction.INSTANCE), any(), any());
+        }).when(client).execute(eq(SearchRelevanceStatsAction.INSTANCE), any(), any());
     }
 
     @Override
@@ -73,27 +73,27 @@ public class RestNeuralStatsActionTests extends InferenceProcessorTestCase {
 
     public void test_execute() throws Exception {
         when(settingsAccessor.isStatsEnabled()).thenReturn(true);
-        RestNeuralStatsAction restNeuralStatsAction = new RestNeuralStatsAction(settingsAccessor);
+        RestSearchRelevanceStatsAction restSearchRelevanceStatsAction = new RestSearchRelevanceStatsAction(settingsAccessor);
 
         RestRequest request = getRestRequest();
-        restNeuralStatsAction.handleRequest(request, channel, client);
+        restSearchRelevanceStatsAction.handleRequest(request, channel, client);
 
-        ArgumentCaptor<NeuralStatsRequest> argumentCaptor = ArgumentCaptor.forClass(NeuralStatsRequest.class);
-        verify(client, times(1)).execute(eq(NeuralStatsAction.INSTANCE), argumentCaptor.capture(), any());
+        ArgumentCaptor<SearchRelevanceStatsRequest> argumentCaptor = ArgumentCaptor.forClass(SearchRelevanceStatsRequest.class);
+        verify(client, times(1)).execute(eq(SearchRelevanceStatsAction.INSTANCE), argumentCaptor.capture(), any());
 
-        NeuralStatsInput capturedInput = argumentCaptor.getValue().getNeuralStatsInput();
+        SearchRelevanceStatsInput capturedInput = argumentCaptor.getValue().getSearchRelevanceStatsInput();
         assertEquals(capturedInput.getEventStatNames(), EnumSet.allOf(EventStatName.class));
         assertEquals(capturedInput.getInfoStatNames(), EnumSet.allOf(InfoStatName.class));
     }
 
     public void test_handleRequest_disabledForbidden() throws Exception {
         when(settingsAccessor.isStatsEnabled()).thenReturn(false);
-        RestNeuralStatsAction restNeuralStatsAction = new RestNeuralStatsAction(settingsAccessor);
+        RestSearchRelevanceStatsAction restSearchRelevanceStatsAction = new RestSearchRelevanceStatsAction(settingsAccessor);
 
         RestRequest request = getRestRequest();
-        restNeuralStatsAction.handleRequest(request, channel, client);
+        restSearchRelevanceStatsAction.handleRequest(request, channel, client);
 
-        verify(client, never()).execute(eq(NeuralStatsAction.INSTANCE), any(), any());
+        verify(client, never()).execute(eq(SearchRelevanceStatsAction.INSTANCE), any(), any());
 
         ArgumentCaptor<BytesRestResponse> responseCaptor = ArgumentCaptor.forClass(BytesRestResponse.class);
         verify(channel).sendResponse(responseCaptor.capture());
@@ -104,7 +104,7 @@ public class RestNeuralStatsActionTests extends InferenceProcessorTestCase {
 
     public void test_handleRequest_invalidStatParameter() throws Exception {
         when(settingsAccessor.isStatsEnabled()).thenReturn(true);
-        RestNeuralStatsAction restNeuralStatsAction = new RestNeuralStatsAction(settingsAccessor);
+        RestSearchRelevanceStatsAction restSearchRelevanceStatsAction = new RestSearchRelevanceStatsAction(settingsAccessor);
 
         // Create request with invalid stat parameter
         Map<String, String> params = new HashMap<>();
@@ -115,10 +115,10 @@ public class RestNeuralStatsActionTests extends InferenceProcessorTestCase {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> restNeuralStatsAction.handleRequest(request, channel, client)
+                () -> restSearchRelevanceStatsAction.handleRequest(request, channel, client)
         );
 
-        verify(client, never()).execute(eq(NeuralStatsAction.INSTANCE), any(), any());
+        verify(client, never()).execute(eq(SearchRelevanceStatsAction.INSTANCE), any(), any());
     }
 
     private RestRequest getRestRequest() {

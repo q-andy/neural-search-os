@@ -12,16 +12,16 @@ import org.opensearch.transport.TransportRequest;
 import java.io.IOException;
 
 /**
- *  NeuralStatsNodeRequest represents the request to an individual node
+ *  SearchRelevanceStatsNodeRequest represents the request to an individual node
  */
-public class NeuralStatsNodeRequest extends TransportRequest {
+public class SearchRelevanceStatsNodeRequest extends TransportRequest {
     @Getter
-    private NeuralStatsRequest request;
+    private SearchRelevanceStatsRequest request;
 
     /**
      * Constructor
      */
-    public NeuralStatsNodeRequest() {
+    public SearchRelevanceStatsNodeRequest() {
         super();
     }
 
@@ -31,9 +31,9 @@ public class NeuralStatsNodeRequest extends TransportRequest {
      * @param in input stream
      * @throws IOException in case of I/O errors
      */
-    public NeuralStatsNodeRequest(StreamInput in) throws IOException {
+    public SearchRelevanceStatsNodeRequest(StreamInput in) throws IOException {
         super(in);
-        request = new NeuralStatsRequest(in);
+        request = new SearchRelevanceStatsRequest(in);
     }
 
     /**
@@ -41,7 +41,7 @@ public class NeuralStatsNodeRequest extends TransportRequest {
      *
      * @param request NeuralStatsRequest
      */
-    public NeuralStatsNodeRequest(NeuralStatsRequest request) {
+    public SearchRelevanceStatsNodeRequest(SearchRelevanceStatsRequest request) {
         this.request = request;
     }
 

@@ -14,7 +14,7 @@ import java.util.Map;
 
 import static org.opensearch.neuralsearch.util.TestUtils.NODES_BWC_CLUSTER;
 
-public class RestNeuralStatsActionIT extends AbstractRollingUpgradeTestCase {
+public class RestSearchRelevanceStatsActionIT extends AbstractRollingUpgradeTestCase {
     private static final String PIPELINE_NAME = "nlp-pipeline";
     private static final String TEST_FIELD = "passage_text";
     private static final String TEXT = "Hello world";

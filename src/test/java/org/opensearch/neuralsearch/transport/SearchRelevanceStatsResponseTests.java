@@ -31,10 +31,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.opensearch.neuralsearch.util.TestUtils.xContentBuilderToMap;
 
-public class NeuralStatsResponseTests extends OpenSearchTestCase {
+public class SearchRelevanceStatsResponseTests extends OpenSearchTestCase {
 
     private ClusterName clusterName;
-    private List<NeuralStatsNodeResponse> nodes;
+    private List<SearchRelevanceStatsNodeResponse> nodes;
     private List<FailedNodeException> failures;
     private Map<String, StatSnapshot<?>> infoStats;
     private Map<String, StatSnapshot<?>> aggregatedNodeStats;
@@ -68,7 +68,7 @@ public class NeuralStatsResponseTests extends OpenSearchTestCase {
         // Booleans as bytes
         when(mockStreamInput.readByte()).thenReturn((byte) 1).thenReturn((byte) 0);
 
-        NeuralStatsResponse response = new NeuralStatsResponse(mockStreamInput);
+        SearchRelevanceStatsResponse response = new SearchRelevanceStatsResponse(mockStreamInput);
 
         assertEquals("test-cluster", response.getClusterName().value());
         assertEquals(nodes, response.getNodes());
@@ -81,7 +81,7 @@ public class NeuralStatsResponseTests extends OpenSearchTestCase {
     }
 
     public void test_writeTo() throws IOException {
-        NeuralStatsResponse response = new NeuralStatsResponse(
+        SearchRelevanceStatsResponse response = new SearchRelevanceStatsResponse(
             clusterName,
             nodes,
             failures,
@@ -107,7 +107,7 @@ public class NeuralStatsResponseTests extends OpenSearchTestCase {
     }
 
     public void test_toXContent_emptyStats() throws IOException {
-        NeuralStatsResponse response = new NeuralStatsResponse(
+        SearchRelevanceStatsResponse response = new SearchRelevanceStatsResponse(
             clusterName,
             nodes,
             failures,
@@ -134,7 +134,7 @@ public class NeuralStatsResponseTests extends OpenSearchTestCase {
         when(mockSnapshot.getValue()).thenReturn(42L);
         infoStats.put("test.nested.stat", mockSnapshot);
 
-        NeuralStatsResponse response = new NeuralStatsResponse(
+        SearchRelevanceStatsResponse response = new SearchRelevanceStatsResponse(
             clusterName,
             nodes,
             failures,
@@ -162,7 +162,7 @@ public class NeuralStatsResponseTests extends OpenSearchTestCase {
         when(mockSnapshot.getValue()).thenReturn(42L);
         infoStats.put("test.nested.stat", mockSnapshot);
 
-        NeuralStatsResponse response = new NeuralStatsResponse(
+        SearchRelevanceStatsResponse response = new SearchRelevanceStatsResponse(
             clusterName,
             nodes,
             failures,
@@ -190,7 +190,7 @@ public class NeuralStatsResponseTests extends OpenSearchTestCase {
         nodeStats.put("test.stat", mockSnapshot);
         nodeIdToNodeEventStats.put("node1", nodeStats);
 
-        NeuralStatsResponse response = new NeuralStatsResponse(
+        SearchRelevanceStatsResponse response = new SearchRelevanceStatsResponse(
             clusterName,
             nodes,
             failures,
@@ -220,7 +220,7 @@ public class NeuralStatsResponseTests extends OpenSearchTestCase {
         nodeStats.put("test.stat", mockSnapshot);
         nodeIdToNodeEventStats.put("node1", nodeStats);
 
-        NeuralStatsResponse response = new NeuralStatsResponse(
+        SearchRelevanceStatsResponse response = new SearchRelevanceStatsResponse(
             clusterName,
             nodes,
             failures,
@@ -251,7 +251,7 @@ public class NeuralStatsResponseTests extends OpenSearchTestCase {
 
         infoStats.put("test.nested.stat", infoStatSnapshot);
 
-        NeuralStatsResponse response = new NeuralStatsResponse(
+        SearchRelevanceStatsResponse response = new SearchRelevanceStatsResponse(
             clusterName,
             nodes,
             failures,

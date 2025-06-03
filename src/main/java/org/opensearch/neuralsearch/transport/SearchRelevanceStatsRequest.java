@@ -8,7 +8,7 @@ import lombok.Getter;
 import org.opensearch.action.support.nodes.BaseNodesRequest;
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.common.io.stream.StreamOutput;
-import org.opensearch.neuralsearch.stats.NeuralStatsInput;
+import org.opensearch.neuralsearch.stats.SearchRelevanceStatsInput;
 
 import java.io.IOException;
 
@@ -16,20 +16,20 @@ import java.io.IOException;
  * NeuralStatsRequest gets node (cluster) level Stats for Neural
  * By default, all parameters will be true
  */
-public class NeuralStatsRequest extends BaseNodesRequest<NeuralStatsRequest> {
+public class SearchRelevanceStatsRequest extends BaseNodesRequest<SearchRelevanceStatsRequest> {
 
     /**
      * Key indicating all stats should be retrieved
      */
     @Getter
-    private final NeuralStatsInput neuralStatsInput;
+    private final SearchRelevanceStatsInput searchRelevanceStatsInput;
 
     /**
-     * Empty constructor needed for NeuralStatsTransportAction
+     * Empty constructor needed for SearchRelevanceStatsTransportAction
      */
-    public NeuralStatsRequest() {
+    public SearchRelevanceStatsRequest() {
         super((String[]) null);
-        this.neuralStatsInput = new NeuralStatsInput();
+        this.searchRelevanceStatsInput = new SearchRelevanceStatsInput();
     }
 
     /**
@@ -38,9 +38,9 @@ public class NeuralStatsRequest extends BaseNodesRequest<NeuralStatsRequest> {
      * @param in input stream
      * @throws IOException in case of I/O errors
      */
-    public NeuralStatsRequest(StreamInput in) throws IOException {
+    public SearchRelevanceStatsRequest(StreamInput in) throws IOException {
         super(in);
-        this.neuralStatsInput = new NeuralStatsInput(in);
+        this.searchRelevanceStatsInput = new SearchRelevanceStatsInput(in);
     }
 
     /**
@@ -48,14 +48,14 @@ public class NeuralStatsRequest extends BaseNodesRequest<NeuralStatsRequest> {
      *
      * @param nodeIds NodeIDs from which to retrieve stats
      */
-    public NeuralStatsRequest(String[] nodeIds, NeuralStatsInput neuralStatsInput) {
+    public SearchRelevanceStatsRequest(String[] nodeIds, SearchRelevanceStatsInput searchRelevanceStatsInput) {
         super(nodeIds);
-        this.neuralStatsInput = neuralStatsInput;
+        this.searchRelevanceStatsInput = searchRelevanceStatsInput;
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        neuralStatsInput.writeTo(out);
+        searchRelevanceStatsInput.writeTo(out);
     }
 }
